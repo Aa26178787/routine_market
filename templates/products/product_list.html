@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}운동 루틴 찾기 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section">
+    <div class="page-heading">
+        <p class="eyebrow">Routine catalog</p>
+        <h1>운동 루틴 찾기</h1>
+        <p>운동 목적과 현재 수준에 맞는 프로그램을 검색하세요.</p>
+    </div>
+
+    <form class="filter-panel" method="get">
+        <div class="filter-search">
+            <label for="q">검색어</label>
+            <input id="q" name="q" value="{{ filters.q }}" placeholder="상품명 또는 프로그램 설명">
+        </div>
+        <div class="filter-grid">
+            <div><label for="category">운동 분야</label><select id="category" name="category"><option value="">전체</option>{% for item in categories %}<option value="{{ item.slug }}" {% if filters.category == item.slug %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+            <div><label for="difficulty">난이도</label><select id="difficulty" name="difficulty"><option value="">전체</option>{% for value, label in difficulties %}<option value="{{ value }}" {% if filters.difficulty == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div><label for="goal">운동 목적</label><select id="goal" name="goal"><option value="">전체</option>{% for item in goals %}<option value="{{ item.slug }}" {% if filters.goal == item.slug %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+            <div><label for="max_duration">최대 기간</label><select id="max_duration" name="max_duration"><option value="">전체</option><option value="4" {% if filters.max_duration == '4' %}selected{% endif %}>4주 이하</option><option value="8" {% if filters.max_duration == '8' %}selected{% endif %}>8주 이하</option><option value="12" {% if filters.max_duration == '12' %}selected{% endif %}>12주 이하</option><option value="16" {% if filters.max_duration == '16' %}selected{% endif %}>16주 이하</option></select></div>
+            <div><label for="min_price">최소 가격</label><input id="min_price" type="number" min="0" name="min_price" value="{{ filters.min_price }}"></div>
+            <div><label for="max_price">최대 가격</label><input id="max_price" type="number" min="0" name="max_price" value="{{ filters.max_price }}"></div>
+            <div><label for="sort">정렬</label><select id="sort" name="sort"><option value="latest" {% if filters.sort == 'latest' %}selected{% endif %}>최신순</option><option value="price_low" {% if filters.sort == 'price_low' %}selected{% endif %}>가격 낮은순</option><option value="price_high" {% if filters.sort == 'price_high' %}selected{% endif %}>가격 높은순</option><option value="rating" {% if filters.sort == 'rating' %}selected{% endif %}>평점순</option></select></div>
+        </div>
+        <div class="actions"><button class="button" type="submit">조건 적용</button><a class="button secondary" href="{% url 'products:list' %}">초기화</a></div>
+    </form>
+
+    <div class="result-heading"><h2>검색 결과</h2><span>{{ result_count }}개</span></div>
+    <div class="product-grid">
+        {% for product in products %}
+            {% include "products/_product_card.html" with product=product %}
+        {% empty %}
+            <div class="empty-state">조건에 맞는 운동 루틴이 없습니다.</div>
+        {% endfor %}
+    </div>
+    {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="상품 목록 페이지">
+            {% if page_obj.has_previous %}<a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">이전</a>{% endif %}
+            <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}<a href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}">다음</a>{% endif %}
+        </nav>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}트레이너 인증 신청 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container form-page section">
+    <div class="page-heading">
+        <p class="eyebrow">판매자 인증</p>
+        <h1>{% if application %}트레이너 인증 재신청{% else %}트레이너 인증 신청{% endif %}</h1>
+        <p>제출 자료는 관리자 심사에만 사용되며 공개 프로필에는 증빙 원본이 표시되지 않습니다.</p>
+    </div>
+
+    {% if application and application.status == 'REJECTED' %}
+        <div class="message warning"><strong>이전 신청이 거절되었습니다.</strong><br>{{ application.rejection_reason }}</div>
+    {% endif %}
+
+    <form class="panel" method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <fieldset>
+            <legend>전문가 정보</legend>
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+        </fieldset>
+
+        <fieldset>
+            <legend>자격 정보</legend>
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}<div class="form-errors">{{ formset.non_form_errors }}</div>{% endif %}
+            {% for certification_form in formset %}
+                <div class="subpanel">
+                    {% for hidden in certification_form.hidden_fields %}{{ hidden }}{% endfor %}
+                    {% for field in certification_form.visible_fields %}
+                        <div class="field">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                            {{ field.errors }}
+                        </div>
+                    {% endfor %}
+                    {% if certification_form.instance.pk %}
+                        <p class="muted">기존 파일: {{ certification_form.instance.original_filename }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </fieldset>
+
+        <button class="button" type="submit">인증 신청 제출</button>
+    </form>
+</section>
+{% endblock %}

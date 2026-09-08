@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}트레이너 인증 상태 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="panel status-panel">
+        <p class="eyebrow">판매자 인증</p>
+        <h1>트레이너 인증 상태</h1>
+
+        <div class="status-row">
+            <span>현재 상태</span>
+            <strong class="status {{ application.status|lower }}">{{ application.get_status_display }}</strong>
+        </div>
+        <dl class="summary-list">
+            <div><dt>전문 분야</dt><dd>{{ application.specialty }}</dd></div>
+            <div><dt>경력</dt><dd>{{ application.career_years }}년</dd></div>
+            <div><dt>제출일</dt><dd>{{ application.submitted_at|date:"Y년 m월 d일 H:i" }}</dd></div>
+        </dl>
+
+        {% if application.status == 'PENDING' %}
+            <p class="notice">관리자가 제출한 자격과 활동 정보를 검토하고 있습니다.</p>
+        {% elif application.status == 'APPROVED' %}
+            <p class="notice success">승인이 완료되었습니다. 이제 운동 루틴 상품을 등록할 수 있습니다.</p>
+        {% else %}
+            <div class="notice danger">
+                <strong>거절 사유</strong>
+                <p>{{ application.rejection_reason }}</p>
+            </div>
+            <a class="button" href="{% url 'trainers:application_form' %}">정보 수정 후 재신청</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

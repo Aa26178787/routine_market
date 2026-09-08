@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.title }} - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section">
+    <div class="detail-grid">
+        <div class="detail-image"><img src="{{ product.thumbnail_url }}" alt="{{ product.title }} 썸네일"></div>
+        <div class="detail-summary">
+            <p class="eyebrow">{{ product.category.name }} · {{ product.get_difficulty_display }}</p>
+            <h1>{{ product.title }}</h1>
+            <p class="lead">{{ product.short_description }}</p>
+            <div class="trainer-line"><strong>{{ product.seller.user.nickname }}</strong><span>인증 트레이너 · 경력 {{ product.seller.career_years }}년</span></div>
+            <dl class="summary-list">
+                <div><dt>프로그램 기간</dt><dd>{{ product.duration_weeks }}주</dd></div>
+                <div><dt>주당 운동</dt><dd>{{ product.sessions_per_week }}회</dd></div>
+                <div><dt>운동 목적</dt><dd>{% for goal in product.goals.all %}{{ goal.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</dd></div>
+                <div><dt>평점</dt><dd>{% if product.average_rating %}{{ product.average_rating|floatformat:1 }} / 5 ({{ product.review_count }}개){% else %}아직 리뷰 없음{% endif %}</dd></div>
+            </dl>
+            <div class="purchase-box">
+                <strong>{{ product.price }}원</strong>
+                <div class="purchase-actions">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'products:wishlist_toggle' product.pk %}">{% csrf_token %}<button class="button secondary" type="submit">{% if is_wished %}찜 해제{% else %}찜하기{% endif %}</button></form>
+                        {% if is_purchased %}
+                            <a class="button" href="{% url 'orders:purchase_history' %}">구매한 상품</a>
+                        {% elif product.seller.user_id == user.id %}
+                            <a class="button" href="{% url 'products:update' product.pk %}">내 상품 수정</a>
+                        {% elif is_in_cart %}
+                            <a class="button" href="{% url 'orders:cart' %}">장바구니 보기</a>
+                        {% else %}
+                            <form method="post" action="{% url 'orders:cart_add' product.pk %}">{% csrf_token %}<button class="button" type="submit">장바구니 담기</button></form>
+                        {% endif %}
+                    {% else %}
+                        <a class="button" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">로그인 후 구매</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <article class="panel prose"><h2>프로그램 소개</h2>{{ product.description|linebreaks }}</article>
+        <aside class="panel"><h2>트레이너 소개</h2><p>{{ product.seller.introduction }}</p>{% if product.seller.activity_url %}<a href="{{ product.seller.activity_url }}" rel="noopener noreferrer" target="_blank">활동 프로필 보기</a>{% endif %}</aside>
+    </div>
+
+    <section class="reviews-section">
+        <div class="result-heading"><h2>구매자 리뷰</h2><span>{{ product.review_count }}개</span></div>
+        {% for review in product.visible_reviews %}
+            <article class="review">
+                <div class="review-heading">
+                    <strong>{{ review.author.nickname }} · {{ review.rating }}점</strong>
+                    {% if user == review.author %}<div class="review-actions"><a href="{% url 'reviews:update' review.pk %}">수정</a><form method="post" action="{% url 'reviews:delete' review.pk %}">{% csrf_token %}<button class="link-button danger-text" type="submit">삭제</button></form></div>{% endif %}
+                </div>
+                <p>{{ review.content }}</p>
+            </article>
+        {% empty %}
+            <div class="empty-state">아직 작성된 리뷰가 없습니다.</div>
+        {% endfor %}
+    </section>
+</section>
+{% endblock %}

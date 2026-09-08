@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}주문 {{ order.order_number }} - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="page-heading"><p class="eyebrow">Order</p><h1>주문 상세</h1><p class="order-number">{{ order.order_number }}</p></div>
+    <div class="panel">
+        <div class="status-row"><span>주문 상태</span><strong class="status {{ order.status|lower }}">{{ order.get_status_display }}</strong></div>
+        {% for item in order.items.all %}
+            <div class="checkout-line"><div><strong>{{ item.product_title }}</strong><small>{{ item.seller_name }} · 파일 v{{ item.product_file.version }}</small></div><span>{{ item.unit_price }}원</span></div>
+        {% endfor %}
+        <div class="checkout-total"><span>총 주문금액</span><strong>{{ order.total_amount }}원</strong></div>
+
+        {% if order.status == 'PENDING' %}
+            <p class="notice">가상 결제 버튼을 누르면 구매와 다운로드 권한이 확정됩니다.</p>
+            <div class="actions split-actions"><form method="post" action="{% url 'orders:pay' order.order_number %}">{% csrf_token %}<button class="button" type="submit">가상 결제 완료</button></form><form method="post" action="{% url 'orders:cancel' order.order_number %}">{% csrf_token %}<button class="button secondary" type="submit">주문 취소</button></form></div>
+        {% elif order.status == 'PAID' %}
+            <p class="notice success">결제가 완료되었습니다. 구매 내역에서 상품을 확인할 수 있습니다.</p>
+            <a class="button full" href="{% url 'orders:purchase_history' %}">구매 내역 보기</a>
+        {% else %}
+            <p class="notice danger">취소된 주문입니다. 상품은 장바구니로 돌아갔습니다.</p>
+            <a class="button secondary full" href="{% url 'orders:cart' %}">장바구니 보기</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

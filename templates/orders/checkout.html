@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}주문 확인 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="page-heading"><p class="eyebrow">Checkout</p><h1>주문 확인</h1><p>가상 결제 단계로 이동하기 전에 주문 내용을 확인하세요.</p></div>
+    <div class="panel">
+        {% for item in items %}
+            <div class="checkout-line"><div><strong>{{ item.product.title }}</strong><small>{{ item.product.seller.user.nickname }}</small></div><span>{{ item.product.price }}원</span></div>
+        {% empty %}<div class="empty-state">주문할 상품이 없습니다.</div>{% endfor %}
+        {% if items %}
+            <div class="checkout-total"><span>총 결제금액</span><strong>{{ total_amount }}원</strong></div>
+            <p class="notice">이 프로젝트에서는 실제 금액이 결제되지 않습니다.</p>
+            <form method="post">{% csrf_token %}<button class="button full" type="submit">주문 생성</button></form>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

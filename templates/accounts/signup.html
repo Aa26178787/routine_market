@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}회원가입 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="panel">
+        <p class="eyebrow">새 계정</p>
+        <h1>회원가입</h1>
+        <p class="muted">일반회원으로 가입한 뒤 언제든 트레이너 인증을 신청할 수 있습니다.</p>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <button class="button full" type="submit">가입하기</button>
+        </form>
+        <p class="form-footer">이미 계정이 있나요? <a href="{% url 'accounts:login' %}">로그인</a></p>
+    </div>
+</section>
+{% endblock %}

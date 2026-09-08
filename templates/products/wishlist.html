@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}찜한 운동 루틴 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section">
+    <div class="page-heading">
+        <p class="eyebrow">My wishlist</p>
+        <h1>찜한 운동 루틴</h1>
+        <p>관심 있는 프로그램을 모아 비교할 수 있습니다.</p>
+    </div>
+    <div class="product-grid">
+        {% for item in items %}
+            {% include "products/_product_card.html" with product=item.product %}
+        {% empty %}
+            <div class="empty-state">찜한 운동 루틴이 없습니다.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

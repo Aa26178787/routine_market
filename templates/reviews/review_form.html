@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == 'create' %}리뷰 작성{% else %}리뷰 수정{% endif %} - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="page-heading">
+        <p class="eyebrow">Verified review</p>
+        <h1>{% if mode == 'create' %}구매자 리뷰 작성{% else %}리뷰 수정{% endif %}</h1>
+        <p>{{ order_item.product_title }}</p>
+    </div>
+    <form class="panel" method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+            <div class="field {% if field.name == 'rating' %}rating-field{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {{ field.errors }}
+            </div>
+        {% endfor %}
+        <div class="actions"><button class="button" type="submit">{% if mode == 'create' %}리뷰 등록{% else %}변경 저장{% endif %}</button><a class="button secondary" href="{% url 'orders:purchase_history' %}">취소</a></div>
+    </form>
+</section>
+{% endblock %}

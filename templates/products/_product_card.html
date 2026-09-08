@@ -1,0 +1,14 @@
+<article class="product-card">
+    <a class="product-image" href="{% url 'products:detail' product.slug %}">
+        <img src="{{ product.thumbnail_url }}" alt="{{ product.title }} 썸네일">
+    </a>
+    <div class="product-card-body">
+        <div class="product-meta"><span>{{ product.category.name }}</span><span>{{ product.get_difficulty_display }}</span></div>
+        <h3><a href="{% url 'products:detail' product.slug %}">{{ product.title }}</a></h3>
+        <p>{{ product.short_description }}</p>
+        <div class="product-card-footer">
+            <strong>{{ product.price }}원</strong>
+            <span>{{ product.duration_weeks }}주 · 주 {{ product.sessions_per_week }}회</span>
+        </div>
+    </div>
+</article>

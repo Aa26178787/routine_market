@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}로그인 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="panel">
+        <p class="eyebrow">다시 오신 것을 환영합니다</p>
+        <h1>로그인</h1>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">이메일 또는 비밀번호를 확인해주세요.</div>{% endif %}
+            {% for field in form %}
+                <div class="field">
+                    <label for="{{ field.id_for_label }}">{% if field.name == 'username' %}이메일{% else %}{{ field.label }}{% endif %}</label>
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <button class="button full" type="submit">로그인</button>
+        </form>
+        <p class="form-footer">아직 계정이 없나요? <a href="{% url 'accounts:signup' %}">회원가입</a></p>
+    </div>
+</section>
+{% endblock %}

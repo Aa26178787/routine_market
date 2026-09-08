@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Routine Market{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container nav-wrap">
+            <a class="brand" href="{% url 'core:home' %}">Routine Market</a>
+            <nav aria-label="주요 메뉴">
+                <a href="{% url 'products:list' %}">운동 루틴</a>
+                {% if user.is_authenticated %}
+                    <span class="welcome">{{ user.nickname }}님</span>
+                    <a href="{% url 'products:wishlist' %}">찜</a>
+                    <a href="{% url 'orders:cart' %}">장바구니</a>
+                    <a href="{% url 'orders:purchase_history' %}">구매 내역</a>
+                    {% if user.role == 'TRAINER' %}
+                        <a href="{% url 'products:seller_dashboard' %}">판매 관리</a>
+                    {% else %}
+                        <a href="{% url 'trainers:application_form' %}">트레이너 신청</a>
+                    {% endif %}
+                    {% if user.is_staff %}<a href="{% url 'admin:index' %}">관리자</a>{% endif %}
+                    <form class="inline-form" method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button class="link-button" type="submit">로그아웃</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'accounts:login' %}">로그인</a>
+                    <a class="button small" href="{% url 'accounts:signup' %}">회원가입</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% if messages %}
+            <div class="container messages" aria-live="polite">
+                {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">운동 목적과 수준에 맞는 루틴을 한곳에서 만나보세요.</div>
+    </footer>
+</body>
+</html>
