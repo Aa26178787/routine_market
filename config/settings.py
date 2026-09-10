@@ -1,8 +1,12 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env", override=False)
 
 
 def env_bool(name: str, default: bool = False) -> bool:
@@ -100,10 +104,46 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# 로컬에서는 Django가 권한 확인 후 파일을 전송합니다. S3 배포 시 redirect로
-# 변경하고 스토리지 백엔드가 만료되는 서명 URL을 생성하도록 구성합니다.
-PRIVATE_FILE_DELIVERY = os.getenv("PRIVATE_FILE_DELIVERY", "proxy")
+USE_S3 = env_bool("USE_S3", False)
 DOWNLOAD_URL_EXPIRES = int(os.getenv("DOWNLOAD_URL_EXPIRES", "300"))
+
+if USE_S3:
+    bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+    if not bucket_name:
+        raise ImproperlyConfigured(
+            "USE_S3=true이면 AWS_STORAGE_BUCKET_NAME을 설정해야 합니다."
+        )
+
+    INSTALLED_APPS.append("storages")
+    s3_options = {
+        "bucket_name": bucket_name,
+        "region_name": os.getenv("AWS_S3_REGION_NAME", "ap-northeast-2"),
+        "location": os.getenv("AWS_MEDIA_LOCATION", "media"),
+        "default_acl": None,
+        "file_overwrite": False,
+        "querystring_auth": True,
+        "querystring_expire": DOWNLOAD_URL_EXPIRES,
+        "signature_version": "s3v4",
+    }
+    endpoint_url = os.getenv("AWS_S3_ENDPOINT_URL", "").strip()
+    if endpoint_url:
+        s3_options["endpoint_url"] = endpoint_url
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": s3_options,
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+# 로컬은 Django가 파일을 전송하고, S3는 만료되는 서명 URL로 전달합니다.
+PRIVATE_FILE_DELIVERY = os.getenv(
+    "PRIVATE_FILE_DELIVERY",
+    "redirect" if USE_S3 else "proxy",
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"

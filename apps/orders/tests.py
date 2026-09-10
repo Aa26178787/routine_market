@@ -1,4 +1,5 @@
 import tempfile
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
@@ -148,6 +149,35 @@ class OrderServiceTests(TestCase):
         log = DownloadLog.objects.get(order_item=item)
         self.assertEqual(log.user, self.buyer)
         self.assertEqual(log.user_agent, "RoutineMarketTest/1.0")
+
+    def test_s3_download_redirect_uses_expiring_signed_url(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        complete_virtual_payment(order_id=order.pk, buyer=self.buyer)
+        item = order.items.select_related("product_file").get()
+        self.client.force_login(self.buyer)
+
+        with self.settings(PRIVATE_FILE_DELIVERY="redirect", DOWNLOAD_URL_EXPIRES=300):
+            with (
+                patch("apps.orders.views.default_storage.exists", return_value=True),
+                patch(
+                    "apps.orders.downloads.default_storage.url",
+                    return_value="https://example-bucket.s3.amazonaws.com/signed-download",
+                ) as storage_url,
+            ):
+                response = self.client.get(
+                    reverse("orders:download", args=[item.pk])
+                )
+
+        self.assertRedirects(
+            response,
+            "https://example-bucket.s3.amazonaws.com/signed-download",
+            fetch_redirect_response=False,
+        )
+        storage_url.assert_called_once_with(
+            item.product_file.object_key,
+            expire=300,
+        )
+        self.assertTrue(DownloadLog.objects.filter(order_item=item).exists())
 
     def test_other_user_cannot_download_purchase(self):
         order = create_order_from_cart(buyer=self.buyer)
