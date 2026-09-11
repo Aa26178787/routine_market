@@ -2,11 +2,14 @@
 
 import json
 import os
+import sys
+from pathlib import Path
 
 import boto3
 import django
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
