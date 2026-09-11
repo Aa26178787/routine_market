@@ -72,8 +72,17 @@ with psycopg.connect(
             )
         )
 
+environment_path = Path("/etc/routine-market.env")
+existing_django_secret = ""
+if environment_path.exists():
+    for line in environment_path.read_text(encoding="utf-8").splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name == "DJANGO_SECRET_KEY":
+            existing_django_secret = value
+            break
+
 environment = {
-    "DJANGO_SECRET_KEY": secrets.token_urlsafe(64),
+    "DJANGO_SECRET_KEY": existing_django_secret or secrets.token_urlsafe(64),
     "DJANGO_DEBUG": "false",
     "DJANGO_ALLOWED_HOSTS": f"{public_host},localhost,127.0.0.1",
     "DJANGO_CSRF_TRUSTED_ORIGINS": f"http://{public_host}",
@@ -97,7 +106,6 @@ environment = {
     "DOWNLOAD_URL_EXPIRES": "300",
 }
 
-environment_path = Path("/etc/routine-market.env")
 environment_path.write_text(
     "".join(f"{name}={value}\n" for name, value in environment.items()),
     encoding="utf-8",

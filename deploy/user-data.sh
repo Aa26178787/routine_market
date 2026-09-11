@@ -18,8 +18,8 @@ python3 -m venv /srv/routine-market/.venv
 /srv/routine-market/.venv/bin/pip install -r /srv/routine-market/requirements.txt
 
 chown -R routine-market:www-data /srv/routine-market
-install -o root -g root -m 0644 +    /srv/routine-market/deploy/routine-market.service +    /etc/systemd/system/routine-market.service
-install -o root -g root -m 0644 +    /srv/routine-market/deploy/nginx-routine-market.conf +    /etc/nginx/sites-available/routine-market
+install -o root -g root -m 0644 /srv/routine-market/deploy/routine-market.service /etc/systemd/system/routine-market.service
+install -o root -g root -m 0644 /srv/routine-market/deploy/nginx-routine-market.conf /etc/nginx/sites-available/routine-market
 ln -sfn /etc/nginx/sites-available/routine-market /etc/nginx/sites-enabled/routine-market
 rm -f /etc/nginx/sites-enabled/default
 

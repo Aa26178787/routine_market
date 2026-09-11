@@ -8,6 +8,18 @@
 - EC2 인스턴스 역할로 S3에 접근하고 장기 AWS 키는 저장하지 않음
 - DB 비밀번호는 RDS가 생성한 Secrets Manager 비밀로 관리
 
+## 현재 배포
+
+- 서비스 주소: `http://3.35.122.226/`
+- 상태 확인: `http://3.35.122.226/health/`
+- EC2: `i-09918a6f0f845e8de` (`t3.micro`, Ubuntu 24.04)
+- RDS: `routine-market-db` (PostgreSQL 16.13, `db.t4g.micro`, Single-AZ)
+- S3: `routine-market-108327566686-ap-northeast-2`
+- 운영 리전: `ap-northeast-2`
+
+현재 주소는 HTTP이다. 로그인과 구매 흐름 검증은 완료했지만 실제 공개 운영 전에는
+도메인과 HTTPS를 적용해야 한다.
+
 ## 서버 경로
 
 - 애플리케이션: `/srv/routine-market`
