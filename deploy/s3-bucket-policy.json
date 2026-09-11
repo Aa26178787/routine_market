@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RoutineMarketEc2ListMedia",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::108327566686:role/routine-market-ec2-role"
+      },
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::routine-market-108327566686-ap-northeast-2",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["media/*"]
+        }
+      }
+    },
+    {
+      "Sid": "RoutineMarketEc2MediaObjects",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::108327566686:role/routine-market-ec2-role"
+      },
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::routine-market-108327566686-ap-northeast-2/media/*"
+    }
+  ]
+}

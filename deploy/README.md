@@ -6,7 +6,7 @@
 - 동일 VPC의 비공개 Single-AZ RDS PostgreSQL 사용
 - 기존 비공개 S3 버킷에 미디어 파일 저장
 - EC2 인스턴스 역할로 S3에 접근하고 장기 AWS 키는 저장하지 않음
-- DB 비밀번호는 SSM Parameter Store의 SecureString으로 전달
+- DB 비밀번호는 RDS가 생성한 Secrets Manager 비밀로 관리
 
 ## 서버 경로
 
@@ -16,8 +16,13 @@
 - Nginx 설정: `/etc/nginx/sites-available/routine-market`
 
 초기에는 EC2 공인 주소로 HTTP 검증을 진행한다. 도메인이 정해지기 전에는
-`DJANGO_SECURE_SSL_REDIRECT=false`와 `DJANGO_SECURE_HSTS_SECONDS=0`을 사용한다.
-도메인 연결 후 HTTPS를 적용하면서 두 값을 운영 보안값으로 변경한다.
+`DJANGO_SECURE_SSL_REDIRECT=false`, `DJANGO_SECURE_HSTS_SECONDS=0`,
+`DJANGO_SESSION_COOKIE_SECURE=false`, `DJANGO_CSRF_COOKIE_SECURE=false`를 사용한다.
+도메인 연결 후 HTTPS를 적용하면서 네 값을 운영 보안값으로 변경한다.
+
+EC2 역할의 S3 접근은 `s3-bucket-policy.json`으로 버킷의 `media/`
+경로에만 허용한다. RDS 관리 비밀에는 EC2 역할을 대상으로
+`secretsmanager:GetSecretValue` 리소스 정책을 설정한다.
 
 ## 배포 후 확인
 
