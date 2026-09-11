@@ -20,6 +20,10 @@
 현재 주소는 HTTP이다. 로그인과 구매 흐름 검증은 완료했지만 실제 공개 운영 전에는
 도메인과 HTTPS를 적용해야 한다.
 
+운영 데모 계정은 저장소에 기재된 개발용 기본 비밀번호를 사용하지 않는다.
+배포 전용 비밀번호는 Secrets Manager의
+`routine-market/production/demo-login`에서 관리한다.
+
 ## 서버 경로
 
 - 애플리케이션: `/srv/routine-market`
