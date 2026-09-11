@@ -17,9 +17,22 @@ python manage.py runserver
 
 AWS S3 파일 저장소를 연결하려면 [AWS 연동 가이드](docs/aws-setup.md)를 참고하세요.
 
+## 데모 데이터
+
+개발 환경에서 관리자, 구매자, 트레이너, 승인 대기 신청과 상품·주문·리뷰를 한 번에 구성합니다. `--reset`은 데모 계정의 구매 흐름을 항상 같은 초기 상태로 되돌립니다.
+
+```powershell
+aws sso login --profile routine-market
+python manage.py seed_demo --reset
+python manage.py runserver
+```
+
+기본 공통 비밀번호는 `RoutineDemo123!`이며 `DEMO_PASSWORD` 환경변수로 바꿀 수 있습니다. 이 명령은 `DEBUG=true` 환경에서만 실행됩니다.
+
 ## 문서
 
 - [요구사항 명세서](docs/requirements-specification.md)
 - [ERD](docs/erd.md)
 - [개발 현황 및 향후 작업](docs/project-status.md)
 - [AWS 연동 가이드](docs/aws-setup.md)
+- [MVP 시연 시나리오](docs/demo-scenario.md)

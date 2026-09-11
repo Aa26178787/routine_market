@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}서버 오류 | Routine Market{% endblock %}
+
+{% block content %}
+<section class="section error-page">
+    <div class="container narrow">
+        <div class="error-code" aria-hidden="true">500</div>
+        <h1>서비스 처리 중 문제가 발생했습니다</h1>
+        <p>잠시 후 다시 시도해주세요. 문제가 계속되면 관리자에게 문의해주세요.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'core:home' %}">홈으로 이동</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

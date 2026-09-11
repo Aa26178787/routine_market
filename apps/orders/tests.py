@@ -132,7 +132,18 @@ class OrderServiceTests(TestCase):
         complete_virtual_payment(order_id=order.pk, buyer=self.buyer)
         item = order.items.select_related("product_file").get()
 
-        with tempfile.TemporaryDirectory() as media_root, self.settings(MEDIA_ROOT=media_root):
+        with tempfile.TemporaryDirectory() as media_root, self.settings(
+            MEDIA_ROOT=media_root,
+            PRIVATE_FILE_DELIVERY="proxy",
+            STORAGES={
+                "default": {
+                    "BACKEND": "django.core.files.storage.FileSystemStorage"
+                },
+                "staticfiles": {
+                    "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+                },
+            },
+        ):
             key = default_storage.save("routine-files/test.xlsx", ContentFile(b"xlsx-content"))
             item.product_file.object_key = key
             item.product_file.save(update_fields=["object_key"])

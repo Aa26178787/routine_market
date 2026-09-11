@@ -115,9 +115,15 @@ if USE_S3:
         )
 
     INSTALLED_APPS.append("storages")
+    s3_region_name = os.getenv("AWS_S3_REGION_NAME", "ap-northeast-2")
     s3_options = {
         "bucket_name": bucket_name,
-        "region_name": os.getenv("AWS_S3_REGION_NAME", "ap-northeast-2"),
+        "region_name": s3_region_name,
+        "endpoint_url": os.getenv(
+            "AWS_S3_ENDPOINT_URL",
+            f"https://s3.{s3_region_name}.amazonaws.com",
+        ),
+        "addressing_style": "virtual",
         "location": os.getenv("AWS_MEDIA_LOCATION", "media"),
         "default_acl": None,
         "file_overwrite": False,
@@ -125,10 +131,6 @@ if USE_S3:
         "querystring_expire": DOWNLOAD_URL_EXPIRES,
         "signature_version": "s3v4",
     }
-    endpoint_url = os.getenv("AWS_S3_ENDPOINT_URL", "").strip()
-    if endpoint_url:
-        s3_options["endpoint_url"] = endpoint_url
-
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",

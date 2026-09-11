@@ -1,0 +1,42 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <p>다음 트레이너 인증 신청을 거절합니다.</p>
+    <ul>
+        {% for application in applications %}
+            <li>{{ application.user }} — {{ application.specialty }}</li>
+        {% endfor %}
+    </ul>
+
+    <form method="post">
+        {% csrf_token %}
+        {% for application in applications %}
+            <input type="hidden" name="{{ action_checkbox_name }}" value="{{ application.pk }}">
+        {% endfor %}
+        <input type="hidden" name="action" value="reject_selected">
+        <input type="hidden" name="apply" value="yes">
+
+        <div class="form-row">
+            <label class="required" for="id_rejection_reason">거절 사유</label>
+            {% if reason_error %}
+                <ul class="errorlist"><li>거절 사유를 입력해야 합니다.</li></ul>
+            {% endif %}
+            <textarea
+                id="id_rejection_reason"
+                name="rejection_reason"
+                rows="5"
+                cols="60"
+                required
+            >{{ request.POST.rejection_reason|default:"" }}</textarea>
+            <p class="help">선택한 모든 심사 대기 신청에 같은 사유가 기록됩니다.</p>
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="거절 처리" class="default">
+            <a href="{% url opts|admin_urlname:'changelist' %}" class="closelink">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

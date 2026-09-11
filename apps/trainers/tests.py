@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import Certification, TrainerApplication, TrainerProfile
-from .services import approve_trainer
+from .services import approve_trainer, reject_trainer
 
 
 class TrainerApprovalTests(TestCase):
@@ -43,6 +43,57 @@ class TrainerApprovalTests(TestCase):
         self.assertEqual(self.member.role, get_user_model().Role.TRAINER)
         self.assertEqual(profile.user, self.member)
         self.assertTrue(TrainerProfile.objects.filter(user=self.member).exists())
+
+    def test_rejection_records_reason_reviewer_and_time(self):
+        rejected = reject_trainer(
+            application_id=self.application.pk,
+            reviewer=self.admin,
+            reason="증빙 자료의 자격번호를 확인할 수 없습니다.",
+        )
+
+        self.assertEqual(rejected.status, TrainerApplication.Status.REJECTED)
+        self.assertEqual(rejected.reviewed_by, self.admin)
+        self.assertIsNotNone(rejected.reviewed_at)
+        self.assertEqual(
+            rejected.rejection_reason,
+            "증빙 자료의 자격번호를 확인할 수 없습니다.",
+        )
+
+    def test_admin_reject_action_requires_reason_and_rejects_application(self):
+        self.client.force_login(self.admin)
+        changelist_url = reverse("admin:trainers_trainerapplication_changelist")
+        selection = {
+            "action": "reject_selected",
+            "_selected_action": str(self.application.pk),
+        }
+
+        confirmation = self.client.post(changelist_url, selection)
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertContains(confirmation, "거절 사유")
+
+        missing_reason = self.client.post(
+            changelist_url,
+            {**selection, "apply": "yes", "rejection_reason": ""},
+        )
+        self.assertEqual(missing_reason.status_code, 200)
+        self.assertContains(missing_reason, "거절 사유를 입력해야 합니다")
+
+        response = self.client.post(
+            changelist_url,
+            {
+                **selection,
+                "apply": "yes",
+                "rejection_reason": "제출된 증빙을 확인할 수 없습니다.",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, TrainerApplication.Status.REJECTED)
+        self.assertEqual(self.application.reviewed_by, self.admin)
+        self.assertEqual(
+            self.application.rejection_reason,
+            "제출된 증빙을 확인할 수 없습니다.",
+        )
 
 
 class TrainerApplicationViewTests(TestCase):

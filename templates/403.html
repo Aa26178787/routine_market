@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}접근 권한 없음 | Routine Market{% endblock %}
+
+{% block content %}
+<section class="section error-page">
+    <div class="container narrow">
+        <div class="error-code" aria-hidden="true">403</div>
+        <h1>접근 권한이 없습니다</h1>
+        <p>로그인한 계정의 권한을 확인하거나 접근 가능한 메뉴에서 다시 시도해주세요.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'core:home' %}">홈으로 이동</a>
+            <a class="button secondary" href="{% url 'accounts:login' %}">다른 계정으로 로그인</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

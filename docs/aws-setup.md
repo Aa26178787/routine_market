@@ -72,7 +72,7 @@ $env:AWS_MEDIA_LOCATION = "media"
 $env:DOWNLOAD_URL_EXPIRES = "300"
 ```
 
-`PRIVATE_FILE_DELIVERY`를 생략하면 S3 사용 시 `redirect`가 자동 선택됩니다. 로컬 파일 저장소에서는 `proxy`가 기본값입니다.
+`PRIVATE_FILE_DELIVERY`를 생략하면 S3 사용 시 `redirect`가 자동 선택됩니다. 로컬 파일 저장소에서는 `proxy`가 기본값입니다. AWS S3는 선택한 리전의 엔드포인트를 자동 사용하며, `AWS_S3_ENDPOINT_URL`은 LocalStack 같은 S3 호환 저장소에서만 별도로 지정합니다.
 
 ## 6. 연결 확인
 
