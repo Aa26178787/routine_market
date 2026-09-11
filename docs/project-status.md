@@ -3,7 +3,7 @@
 - 작성일: 2026-09-11
 - 현재 단계: MVP 핵심 사용자 흐름 구현 완료, 배포 및 안정화 전
 - 기술 구성: Python 3.14, Django 5.2 LTS, PostgreSQL 대상 설계, Django Template
-- 자동 테스트: 로컬 PostgreSQL 기반 26개 통과
+- 자동 테스트: 로컬 PostgreSQL 기반 27개 통과
 
 ## 1. 현재 진행 상태 요약
 
@@ -17,6 +17,7 @@
 - `docs/erd.md`: 전체 관계도, 테이블 필드, 제약조건, 상태 전이와 삭제 정책
 - `docs/aws-setup.md`: S3, IAM, 로컬 인증과 후속 AWS 배포 절차
 - `docs/demo-scenario.md`: 역할별 데모 계정, 시연 순서와 발표 체크리스트
+- `deploy/README.md`: EC2·RDS·S3 운영 구조와 서버 배치 경로
 - `README.md`: 로컬 설치 및 실행 방법
 
 ## 3. 완료된 구현
@@ -131,6 +132,7 @@
 - 사용자용 403·404·500 오류 화면
 - 모바일 크기에서 홈·상품 상세·장바구니·구매 내역 핵심 화면 검수
 - 실제 S3 썸네일 3개의 브라우저 로딩과 원본 크기 확인
+- Gunicorn·Nginx·systemd 운영 실행 구성과 `/health/` 상태 확인 주소
 
 ## 4. 검증 현황
 
@@ -139,7 +141,7 @@
 - Django 시스템 검사
 - 마이그레이션 변경 누락 검사
 - 로컬 PostgreSQL 16 전체 마이그레이션 적용
-- PostgreSQL 테스트 데이터베이스 생성·삭제 및 전체 자동 테스트 26개
+- PostgreSQL 테스트 데이터베이스 생성·삭제 및 전체 자동 테스트 27개
 - 사용자 생성 및 관리자 권한 테스트
 - 트레이너 승인과 역할 변경 테스트
 - 트레이너 신청·증빙파일 업로드 테스트
@@ -173,6 +175,7 @@
 
 ### 6.1 우선순위 P0: AWS 운영 배포
 
+- IAM 관리자가 EC2용 인스턴스 역할과 제한된 `iam:PassRole` 권한 구성
 - AWS RDS for PostgreSQL 생성 및 보안 그룹 설정
 - EC2용 최소 권한 S3 IAM 역할 구성
 - EC2, Gunicorn과 Nginx 배포 구성
@@ -251,7 +254,7 @@
 - `python-dotenv`를 적용해 Git에서 제외되는 `.env`로 로컬 설정 관리
 - Django 시스템 검사와 PostgreSQL 연결 확인 완료
 - `routine_market_user`에 테스트 데이터베이스 생성 권한 부여
-- PostgreSQL `test_routine_market` 데이터베이스에서 전체 자동 테스트 26개 통과
+- PostgreSQL `test_routine_market` 데이터베이스에서 전체 자동 테스트 27개 통과
 
 ### 7.3 시연 환경 검증
 
@@ -259,6 +262,15 @@
 - `seed_demo` 반복 실행과 `--reset` 후 표준 시연 데이터 복원 확인
 - 모바일 390×844 뷰포트에서 홈·상품 상세·장바구니·구매 내역 가로 넘침 없음 확인
 - S3에 저장된 데모 썸네일 3개의 브라우저 로딩과 1200×675 원본 크기 확인
+
+### 7.4 AWS 배포 준비
+
+- 서울 리전 기본 VPC와 4개 기본 서브넷 확인
+- Ubuntu 24.04 LTS 최신 AMI 확인
+- 운영용 Gunicorn, Nginx와 systemd 구성 작성
+- RDS SSL 모드, CSRF 신뢰 출처, 프록시 보안 헤더와 운영 로그 설정 추가
+- `/health/` 엔드포인트 및 자동 테스트 추가
+- SSO `PowerUserAccess`에 IAM 역할 조회·생성 권한이 없어 인스턴스 역할 구성 대기
 
 보안상 AWS 액세스 키, SSO 토큰, 데이터베이스 비밀번호와 로컬 `.env` 파일은 Git에 포함하지 않는다.
 

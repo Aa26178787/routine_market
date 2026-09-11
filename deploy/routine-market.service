@@ -1,0 +1,22 @@
+[Unit]
+Description=Routine Market Gunicorn application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=routine-market
+Group=www-data
+WorkingDirectory=/srv/routine-market
+EnvironmentFile=/etc/routine-market.env
+ExecStart=/srv/routine-market/.venv/bin/gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 2 --timeout 60 --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/routine-market
+
+[Install]
+WantedBy=multi-user.target

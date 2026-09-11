@@ -36,3 +36,4 @@ python manage.py runserver
 - [개발 현황 및 향후 작업](docs/project-status.md)
 - [AWS 연동 가이드](docs/aws-setup.md)
 - [MVP 시연 시나리오](docs/demo-scenario.md)
+- [AWS 운영 배포 구성](deploy/README.md)

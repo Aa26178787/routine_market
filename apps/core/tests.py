@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.exceptions import PermissionDenied
 from django.test import RequestFactory, TestCase, override_settings
+from django.urls import reverse
 from django.views import defaults
 
 from apps.orders.models import CartItem, Order
@@ -64,3 +65,11 @@ class ErrorPageTests(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertIn("서비스 처리 중 문제가 발생했습니다", response.content.decode())
+
+
+class HealthCheckTests(TestCase):
+    def test_health_endpoint(self):
+        response = self.client.get(reverse("core:health"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})

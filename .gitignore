@@ -13,3 +13,4 @@ htmlcov/
 .idea/
 .vscode/
 tmp/
+.codex-remote-attachments/

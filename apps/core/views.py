@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render
 
 from apps.products.models import Product
@@ -10,3 +11,7 @@ def home(request):
         .order_by("-published_at", "-created_at")[:4]
     )
     return render(request, "core/home.html", {"latest_products": latest_products})
+
+
+def health(request):
+    return JsonResponse({"status": "ok"})
