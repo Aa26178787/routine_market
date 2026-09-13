@@ -1,14 +1,4 @@
-<article class="product-card">
-    <a class="product-image" href="{% url 'products:detail' product.slug %}">
-        <img src="{{ product.thumbnail_url }}" alt="{{ product.title }} 썸네일">
-    </a>
-    <div class="product-card-body">
-        <div class="product-meta"><span>{{ product.category.name }}</span><span>{{ product.get_difficulty_display }}</span></div>
-        <h3><a href="{% url 'products:detail' product.slug %}">{{ product.title }}</a></h3>
-        <p>{{ product.short_description }}</p>
-        <div class="product-card-footer">
-            <strong>{{ product.price }}원</strong>
-            <span>{{ product.duration_weeks }}주 · 주 {{ product.sessions_per_week }}회</span>
-        </div>
-    </div>
-</article>
+{% load market %}
+<article class="product-card"><div class="product-cover"><a class="product-image" href="{% url 'products:detail' product.slug %}"><img src="{{ product.thumbnail_url }}" alt="{{ product.title }}" loading="lazy"></a><span class="image-badge">{{ product.category.name }}</span>
+{% if user.is_authenticated %}<form method="post" action="{% url 'products:wishlist_toggle' product.pk %}" class="card-wish">{% csrf_token %}<button type="submit" aria-label="{{ product.title }} 찜 변경">{% include 'shared/icon.html' with name='heart' %}</button></form>{% else %}<a class="card-wish" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" aria-label="로그인 후 찜하기">{% include 'shared/icon.html' with name='heart' %}</a>{% endif %}</div>
+<div class="product-card-body"><h3><a href="{% url 'products:detail' product.slug %}">{{ product.title }}</a></h3><div class="card-trainer"><span>{{ product.seller.user.nickname }} 트레이너</span><span class="rating"><b>★</b> {% if product.average_rating %}{{ product.average_rating|floatformat:1 }} <small>({{ product.review_count }})</small>{% else %}리뷰 없음{% endif %}</span></div><div class="card-specs">{{ product.get_difficulty_display }} <span>·</span> {{ product.duration_weeks }}주 <span>·</span> 주 {{ product.sessions_per_week }}회</div><div class="product-card-footer"><strong class="price">{{ product.price|won }}</strong><span class="download-label">{% include 'shared/icon.html' with name='download' %} XLSX 루틴</span></div></div></article>

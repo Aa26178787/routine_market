@@ -1,9 +1,12 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Sum
-from django.http import Http404, HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.products.models import Product
@@ -11,6 +14,9 @@ from apps.products.models import Product
 from .downloads import build_download_response
 from .models import Cart, CartItem, DownloadLog, Order, OrderItem
 from .services import cancel_pending_order, complete_virtual_payment, create_order_from_cart
+
+
+logger = logging.getLogger(__name__)
 
 
 def _purchased_product_ids(user):
@@ -49,6 +55,8 @@ def cart_add(request, product_id):
         messages.success(request, "상품을 장바구니에 담았습니다.")
     else:
         messages.info(request, "이미 장바구니에 있는 상품입니다.")
+    if request.POST.get("proceed") == "checkout":
+        return redirect("orders:checkout")
     return redirect("orders:cart")
 
 
@@ -121,16 +129,22 @@ def cancel_order(request, order_number):
 
 @login_required
 def purchase_history(request):
-    orders = (
+    orders_queryset = (
         Order.objects.filter(buyer=request.user, status=Order.Status.PAID)
         .prefetch_related("items__product", "items__product_file", "items__review")
         .order_by("-paid_at")
     )
-    summary = orders.aggregate(total_spent=Sum("total_amount"))
+    summary = orders_queryset.aggregate(total_spent=Sum("total_amount"))
+    paginator = Paginator(orders_queryset, 6)
+    page_obj = paginator.get_page(request.GET.get("page"))
     return render(
         request,
         "orders/purchase_history.html",
-        {"orders": orders, "total_spent": summary["total_spent"] or 0},
+        {
+            "orders": page_obj,
+            "page_obj": page_obj,
+            "total_spent": summary["total_spent"] or 0,
+        },
     )
 
 
@@ -142,8 +156,27 @@ def download_order_item(request, order_item_id):
         order__buyer=request.user,
         order__status=Order.Status.PAID,
     )
-    if not default_storage.exists(order_item.product_file.object_key):
-        raise Http404("다운로드 파일을 찾을 수 없습니다.")
+    try:
+        file_exists = default_storage.exists(order_item.product_file.object_key)
+    except Exception:
+        logger.exception("Failed to check a purchased routine download")
+        file_exists = False
+    if not file_exists:
+        messages.error(
+            request,
+            "XLSX 파일을 불러올 수 없습니다. 잠시 후 다시 시도하거나 고객센터에 문의해 주세요.",
+        )
+        return redirect("orders:purchase_history")
+
+    try:
+        response = build_download_response(product_file=order_item.product_file)
+    except Exception:
+        logger.exception("Failed to prepare a purchased routine download")
+        messages.error(
+            request,
+            "XLSX 파일을 불러올 수 없습니다. 잠시 후 다시 시도하거나 고객센터에 문의해 주세요.",
+        )
+        return redirect("orders:purchase_history")
 
     DownloadLog.objects.create(
         user=request.user,
@@ -151,4 +184,4 @@ def download_order_item(request, order_item_id):
         ip_address=request.META.get("REMOTE_ADDR") or None,
         user_agent=(request.META.get("HTTP_USER_AGENT") or "")[:500],
     )
-    return build_download_response(product_file=order_item.product_file)
+    return response

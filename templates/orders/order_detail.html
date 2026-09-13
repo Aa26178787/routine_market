@@ -1,16 +1,17 @@
 {% extends "base.html" %}
+{% load market %}
 
 {% block title %}주문 {{ order.order_number }} - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container narrow section">
+<section class="container section">
     <div class="page-heading"><p class="eyebrow">Order</p><h1>주문 상세</h1><p class="order-number">{{ order.order_number }}</p></div>
-    <div class="panel">
+    <div class="commerce-grid"><div class="panel"><h2>주문 상품</h2>
         <div class="status-row"><span>주문 상태</span><strong class="status {{ order.status|lower }}">{{ order.get_status_display }}</strong></div>
         {% for item in order.items.all %}
-            <div class="checkout-line"><div><strong>{{ item.product_title }}</strong><small>{{ item.seller_name }} · 파일 v{{ item.product_file.version }}</small></div><span>{{ item.unit_price }}원</span></div>
+            <div class="checkout-line"><img src="{{ item.product.thumbnail_url }}" alt=""><div><strong>{{ item.product_title }}</strong><small>{{ item.seller_name }} · 파일 v{{ item.product_file.version }}</small></div><span>{{ item.unit_price|won }}</span></div>
         {% endfor %}
-        <div class="checkout-total"><span>총 주문금액</span><strong>{{ order.total_amount }}원</strong></div>
+        </div><aside class="panel order-summary"><h2>결제 정보</h2><div class="checkout-total"><span>총 주문금액</span><strong>{{ order.total_amount|won }}</strong></div>
 
         {% if order.status == 'PENDING' %}
             <p class="notice">가상 결제 버튼을 누르면 구매와 다운로드 권한이 확정됩니다.</p>
@@ -22,6 +23,6 @@
             <p class="notice danger">취소된 주문입니다. 상품은 장바구니로 돌아갔습니다.</p>
             <a class="button secondary full" href="{% url 'orders:cart' %}">장바구니 보기</a>
         {% endif %}
-    </div>
+    </aside></div>
 </section>
 {% endblock %}

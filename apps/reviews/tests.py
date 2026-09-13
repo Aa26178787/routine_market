@@ -121,6 +121,11 @@ class ReviewServiceTests(TestCase):
             response, reverse("products:detail", args=[self.order_item.product.slug])
         )
 
+        confirmation = self.client.get(reverse("reviews:delete", args=[review.pk]))
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertContains(confirmation, "리뷰를 삭제할까요?")
+        self.assertTrue(self.order_item.product.reviews.exists())
+
         response = self.client.post(reverse("reviews:delete", args=[review.pk]))
 
         self.assertRedirects(

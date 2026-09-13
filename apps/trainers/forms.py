@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import Certification, TrainerApplication
+from .models import Certification, TrainerApplication, TrainerProfile
 from .validators import validate_certification_file
 
 
@@ -19,6 +19,22 @@ class TrainerApplicationForm(forms.ModelForm):
             "career_description": forms.Textarea(attrs={"rows": 4}),
             "introduction": forms.Textarea(attrs={"rows": 5}),
         }
+
+
+class TrainerProfileForm(forms.ModelForm):
+    class Meta:
+        model = TrainerProfile
+        fields = ("specialty", "career_years", "introduction", "activity_url")
+        widgets = {"introduction": forms.Textarea(attrs={"rows": 6})}
+        help_texts = {
+            "activity_url": "인스타그램, 블로그 또는 공개 활동 프로필 주소를 입력하세요.",
+        }
+
+    def clean_specialty(self):
+        return self.cleaned_data["specialty"].strip()
+
+    def clean_introduction(self):
+        return self.cleaned_data["introduction"].strip()
         help_texts = {
             "activity_url": "인스타그램, 블로그 또는 공개 프로필 주소를 입력하세요.",
         }
@@ -47,8 +63,10 @@ CertificationFormSet = inlineformset_factory(
     TrainerApplication,
     Certification,
     form=CertificationForm,
-    extra=1,
+    extra=0,
     min_num=1,
+    max_num=5,
     validate_min=True,
-    can_delete=True,
+    validate_max=True,
+    can_delete=False,
 )

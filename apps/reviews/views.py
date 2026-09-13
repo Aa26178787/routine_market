@@ -38,7 +38,8 @@ def review_create(request, order_item_id):
     return render(
         request,
         "reviews/review_form.html",
-        {"form": form, "order_item": order_item, "mode": "create"},
+        {"form": form, "order_item": order_item, "mode": "create",
+         "other_reviews": Review.objects.filter(product=order_item.product, is_visible=True).select_related("author")[:10]},
     )
 
 
@@ -63,15 +64,18 @@ def review_update(request, pk):
     return render(
         request,
         "reviews/review_form.html",
-        {"form": form, "order_item": review.order_item, "review": review, "mode": "update"},
+        {"form": form, "order_item": review.order_item, "review": review, "mode": "update",
+         "other_reviews": Review.objects.filter(product=review.product, is_visible=True).select_related("author")[:10]},
     )
 
 
 @login_required
 def review_delete(request, pk):
-    if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
     review = get_object_or_404(Review.objects.select_related("product"), pk=pk, author=request.user)
+    if request.method == "GET":
+        return render(request, "reviews/review_confirm_delete.html", {"review": review})
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["GET", "POST"])
     product_slug = review.product.slug
     delete_review(review_id=review.pk, author=request.user)
     messages.success(request, "리뷰가 삭제되었습니다.")

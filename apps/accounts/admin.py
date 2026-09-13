@@ -1,7 +1,12 @@
+import logging
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .models import User
+
+
+audit_logger = logging.getLogger("accounts.audit")
 
 
 @admin.register(User)
@@ -54,3 +59,31 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        security_fields = {
+            "email",
+            "role",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "groups",
+            "user_permissions",
+        }
+        changed_security_fields = sorted(security_fields.intersection(form.changed_data))
+        if changed_security_fields:
+            audit_logger.warning(
+                "admin_user_security_change actor_user_id=%s target_user_id=%s fields=%s",
+                request.user.pk,
+                obj.pk,
+                ",".join(changed_security_fields),
+            )
+
+    def delete_model(self, request, obj):
+        audit_logger.warning(
+            "admin_user_delete actor_user_id=%s target_user_id=%s",
+            request.user.pk,
+            obj.pk,
+        )
+        super().delete_model(request, obj)

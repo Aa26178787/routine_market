@@ -1,0 +1,11 @@
+<aside class="account-sidebar">
+    <h3>트레이너 스튜디오</h3>
+    <p>{{ user.nickname }} 트레이너</p>
+    <nav aria-label="트레이너 메뉴">
+        <a href="{% url 'trainers:detail' user.trainer_profile.pk %}" {% if request.resolver_match.namespace == 'trainers' and request.resolver_match.url_name == 'detail' %}class="active"{% endif %}>공개 트레이너 프로필</a>
+        <a href="{% url 'trainers:profile_update' %}" {% if request.resolver_match.namespace == 'trainers' and request.resolver_match.url_name == 'profile_update' %}class="active"{% endif %}>프로필 정보 수정</a>
+        <a href="{% url 'products:seller_dashboard' %}" {% if request.resolver_match.url_name == 'seller_dashboard' %}class="active"{% endif %}>판매 관리</a>
+        <a href="{% url 'products:create' %}" {% if request.resolver_match.url_name == 'create' %}class="active"{% endif %}>＋ 상품 등록</a>
+    </nav>
+    <p class="notice">좋은 루틴이<br>더 건강한 일상을 만듭니다.</p>
+</aside>

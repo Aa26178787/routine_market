@@ -73,16 +73,16 @@ with psycopg.connect(
         )
 
 environment_path = Path("/etc/routine-market.env")
-existing_django_secret = ""
+existing_environment = {}
 if environment_path.exists():
     for line in environment_path.read_text(encoding="utf-8").splitlines():
         name, separator, value = line.partition("=")
-        if separator and name == "DJANGO_SECRET_KEY":
-            existing_django_secret = value
-            break
+        if separator:
+            existing_environment[name] = value
 
 environment = {
-    "DJANGO_SECRET_KEY": existing_django_secret or secrets.token_urlsafe(64),
+    "DJANGO_SECRET_KEY": existing_environment.get("DJANGO_SECRET_KEY")
+    or secrets.token_urlsafe(64),
     "DJANGO_DEBUG": "false",
     "DJANGO_ALLOWED_HOSTS": f"{public_host},localhost,127.0.0.1",
     "DJANGO_CSRF_TRUSTED_ORIGINS": f"http://{public_host}",
@@ -105,6 +105,20 @@ environment = {
     "PRIVATE_FILE_DELIVERY": "redirect",
     "DOWNLOAD_URL_EXPIRES": "300",
 }
+
+# Mail credentials are provisioned separately from Secrets Manager. Preserve them
+# when this database/bootstrap script is run again during a later deployment.
+for name in (
+    "DJANGO_EMAIL_BACKEND",
+    "DJANGO_EMAIL_HOST",
+    "DJANGO_EMAIL_PORT",
+    "DJANGO_EMAIL_HOST_USER",
+    "DJANGO_EMAIL_HOST_PASSWORD",
+    "DJANGO_EMAIL_USE_TLS",
+    "DJANGO_DEFAULT_FROM_EMAIL",
+):
+    if existing_environment.get(name):
+        environment[name] = existing_environment[name]
 
 environment_path.write_text(
     "".join(f"{name}={value}\n" for name, value in environment.items()),

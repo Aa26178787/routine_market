@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}트레이너 인증 신청 - Routine Market{% endblock %}
 
@@ -14,7 +15,7 @@
         <div class="message warning"><strong>이전 신청이 거절되었습니다.</strong><br>{{ application.rejection_reason }}</div>
     {% endif %}
 
-    <form class="panel" method="post" enctype="multipart/form-data" novalidate>
+    <div class="application-banner"><p class="eyebrow">당신의 경험이 누군가의 변화를 만듭니다</p><h2>좋은 트레이너가<br><em>더 많은 사람을 건강하게</em> 만듭니다.</h2><p class="muted">당신의 전문성과 노하우를 루틴마켓에서 전하세요.</p></div><div class="studio-grid"><form class="panel" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
 
@@ -34,25 +35,21 @@
             <legend>자격 정보</legend>
             {{ formset.management_form }}
             {% if formset.non_form_errors %}<div class="form-errors">{{ formset.non_form_errors }}</div>{% endif %}
-            {% for certification_form in formset %}
-                <div class="subpanel">
-                    {% for hidden in certification_form.hidden_fields %}{{ hidden }}{% endfor %}
-                    {% for field in certification_form.visible_fields %}
-                        <div class="field">
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-                            {{ field.errors }}
-                        </div>
-                    {% endfor %}
-                    {% if certification_form.instance.pk %}
-                        <p class="muted">기존 파일: {{ certification_form.instance.original_filename }}</p>
-                    {% endif %}
-                </div>
-            {% endfor %}
+            <div class="certification-forms" data-certification-forms>
+                {% for certification_form in formset %}
+                    {% include "trainers/_certification_form.html" with certification_form=certification_form %}
+                {% endfor %}
+            </div>
+            <template data-certification-template>
+                {% include "trainers/_certification_form.html" with certification_form=formset.empty_form %}
+            </template>
+            <button class="button secondary certification-add-button" type="button" data-add-certification>＋ 자격증 추가</button>
+            <p class="muted certification-limit">자격증은 최대 5개까지 등록할 수 있습니다.</p>
         </fieldset>
 
         <button class="button" type="submit">인증 신청 제출</button>
-    </form>
+    </form><aside class="panel preview-panel"><h2>트레이너 신청 안내</h2><ol class="steps"><li><strong>전문가 정보 입력</strong><small>전문 분야와 경력, 자기소개를 작성합니다.</small></li><li><strong>자격 증빙 제출</strong><small>자격증과 확인 가능한 활동 링크를 등록합니다.</small></li><li><strong>관리자 검토</strong><small>제출된 정보를 바탕으로 인증 여부를 심사합니다.</small></li><li><strong>승인 후 판매 시작</strong><small>승인이 완료되면 운동 루틴을 등록할 수 있습니다.</small></li></ol><div class="notice">증빙 자료는 심사에만 사용되며 공개 프로필에 노출되지 않습니다.</div></aside></div>
 </section>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/trainer-application.js' %}?v=20260914-2" defer></script>{% endblock %}

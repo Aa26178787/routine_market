@@ -1,27 +1,65 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}회원가입 - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container narrow section">
-    <div class="panel">
+<section class="auth-page"><div class="container narrow">
+    <div class="panel signup-card">{% include "shared/auth_tabs.html" %}
         <p class="eyebrow">새 계정</p>
-        <h1>회원가입</h1>
-        <p class="muted">일반회원으로 가입한 뒤 언제든 트레이너 인증을 신청할 수 있습니다.</p>
-        <form method="post" novalidate>
+        <h1>{% if next == '/trainers/apply/' %}트레이너로 시작하기{% else %}회원가입{% endif %}</h1>
+        <p class="muted">{% if next == '/trainers/apply/' %}먼저 기본 계정을 만든 뒤 트레이너 인증 정보를 제출합니다.{% else %}일반회원으로 가입한 뒤 언제든 트레이너 인증을 신청할 수 있습니다.{% endif %}</p>
+        <form method="post" novalidate id="signup-form"
+              data-availability-url="{% url 'accounts:signup_availability' %}"
+              data-email-send-url="{% url 'accounts:send_signup_email_code' %}"
+              data-email-confirm-url="{% url 'accounts:confirm_signup_email_code' %}"
+              data-verified-email="{{ verified_email }}">
             {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
             {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-            {% for field in form %}
-                <div class="field">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
-                    {{ field.errors }}
+            <div class="field">
+                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                <div class="field-with-action">{{ form.email }}<button class="button secondary field-button" type="button" data-send-code>인증번호 받기</button></div>
+                {{ form.email.errors }}
+                <p class="field-feedback{% if verified_email %} success{% endif %}" data-status="email" aria-live="polite">{% if verified_email %}이메일 인증이 완료되었습니다.{% endif %}</p>
+            </div>
+            <div class="email-verification" data-email-verification>
+                <div class="verification-code-row" hidden data-code-row>
+                    <div class="verification-code-input">
+                        <input type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6자리 인증번호" aria-label="이메일 인증번호" data-code-input>
+                        <span class="verification-timer" data-verification-timer aria-live="off">05:00</span>
+                    </div>
+                    <button class="button secondary field-button" type="button" data-confirm-code>인증 확인</button>
                 </div>
-            {% endfor %}
-            <button class="button full" type="submit">가입하기</button>
+                <p class="field-feedback" data-status="verification" aria-live="polite"></p>
+            </div>
+            <div class="field">
+                <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                {{ form.full_name }}{{ form.full_name.errors }}
+            </div>
+            <div class="field">
+                <label for="{{ form.nickname.id_for_label }}">{{ form.nickname.label }}</label>
+                <div class="field-with-action">{{ form.nickname }}<button class="button secondary field-button" type="button" data-check="nickname">중복 확인</button></div>
+                {{ form.nickname.errors }}
+                <p class="field-feedback" data-status="nickname" aria-live="polite"></p>
+            </div>
+            <div class="field">
+                <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
+                {{ form.password1 }}
+                {% if form.password1.help_text %}<small>{{ form.password1.help_text|safe }}</small>{% endif %}
+                {{ form.password1.errors }}
+            </div>
+            <div class="field">
+                <label for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>
+                {{ form.password2 }}
+                {% if form.password2.help_text %}<small>{{ form.password2.help_text|safe }}</small>{% endif %}
+                {{ form.password2.errors }}
+            </div>
+            <button class="button full" type="submit">{% if next == '/trainers/apply/' %}가입하고 트레이너 신청하기{% else %}가입하기{% endif %}</button>
         </form>
-        <p class="form-footer">이미 계정이 있나요? <a href="{% url 'accounts:login' %}">로그인</a></p>
+        <p class="form-footer">이미 계정이 있나요? <a href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">로그인</a></p>
     </div>
-</section>
+</div></section>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/signup.js' %}?v=20260913-3" defer></script>{% endblock %}

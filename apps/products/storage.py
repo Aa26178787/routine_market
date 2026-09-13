@@ -1,8 +1,12 @@
 import hashlib
+import logging
 from pathlib import Path
 from uuid import uuid4
 
 from django.core.files.storage import default_storage
+
+
+logger = logging.getLogger(__name__)
 
 
 def _save_upload(*, uploaded_file, prefix: str) -> tuple[str, str]:
@@ -37,3 +41,17 @@ def save_routine_file(*, uploaded_file, product_id: int) -> dict:
         "size_bytes": uploaded_file.size,
         "checksum_sha256": digest.hexdigest(),
     }
+
+
+def delete_upload(object_key: str) -> bool:
+    """Best-effort cleanup for an object which is no longer referenced by the DB."""
+    if not object_key:
+        return True
+    try:
+        default_storage.delete(object_key)
+        return True
+    except Exception:
+        # Cleanup must never mask the database error which prompted it. Storage
+        # lifecycle rules can remove a rare orphan if the backend is unavailable.
+        logger.exception("Failed to delete an unreferenced product upload")
+        return False

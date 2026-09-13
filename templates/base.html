@@ -6,20 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Routine Market{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/market.css' %}?v=20260914-1">
+    <script src="{% static 'js/market.js' %}" defer></script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
+<a class="skip-link" href="#main-content">본문으로 바로가기</a>
     <header class="site-header">
         <div class="container nav-wrap">
-            <a class="brand" href="{% url 'core:home' %}">Routine Market</a>
+            <a class="brand" href="{% url 'core:home' %}" aria-label="루틴마켓 홈">루틴마켓</a>
+<form class="header-search" method="get" action="{% url 'products:list' %}" role="search"><input name="q" aria-label="운동 루틴 검색" placeholder="원하는 운동 루틴을 검색해 보세요" value="{{ request.GET.q }}"><button type="submit" aria-label="검색">{% include 'shared/icon.html' with name='search' %}</button></form>
             <nav aria-label="주요 메뉴">
-                <a href="{% url 'products:list' %}">운동 루틴</a>
+                <a href="{% url 'products:list' %}">루틴 둘러보기</a>
                 {% if user.is_authenticated %}
-                    <span class="welcome">{{ user.nickname }}님</span>
                     <a href="{% url 'products:wishlist' %}">찜</a>
                     <a href="{% url 'orders:cart' %}">장바구니</a>
                     <a href="{% url 'orders:purchase_history' %}">구매 내역</a>
+                    <a href="{% url 'accounts:profile_update' %}">마이페이지</a>
                     {% if user.role == 'TRAINER' %}
-                        <a href="{% url 'products:seller_dashboard' %}">판매 관리</a>
+                        <a href="{% url 'trainers:detail' user.trainer_profile.pk %}">트레이너 프로필</a>
                     {% else %}
                         <a href="{% url 'trainers:application_form' %}">트레이너 신청</a>
                     {% endif %}
@@ -36,7 +41,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="main-content">
         {% if messages %}
             <div class="container messages" aria-live="polite">
                 {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
@@ -48,5 +53,6 @@
     <footer class="site-footer">
         <div class="container">운동 목적과 수준에 맞는 루틴을 한곳에서 만나보세요.</div>
     </footer>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

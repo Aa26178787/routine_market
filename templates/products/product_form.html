@@ -3,25 +3,32 @@
 {% block title %}{% if mode == 'create' %}상품 등록{% else %}상품 수정{% endif %} - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container form-page section">
+<section class="container section account-layout seller-layout">{% include "shared/seller_sidebar.html" %}<div>
     <div class="page-heading">
         <p class="eyebrow">Seller studio</p>
         <h1>{% if mode == 'create' %}운동 루틴 상품 등록{% else %}상품 수정{% endif %}</h1>
         <p>구매 전 확인할 수 있는 정보와 실제 XLSX 루틴 파일을 등록하세요.</p>
     </div>
-    <form class="panel" method="post" enctype="multipart/form-data" novalidate>
+    <div class="studio-grid"><form class="panel product-editor" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
-        {% for field in form %}
-            <div class="field {% if field.name == 'goals' %}checkbox-field{% endif %}">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
-                {{ field.errors }}
-            </div>
-        {% endfor %}
+        <fieldset><legend>기본 정보</legend><div class="form-grid">
+{% include "shared/field.html" with field=form.title wide=True %}
+{% include "shared/field.html" with field=form.price %}
+{% include "shared/field.html" with field=form.category %}
+{% include "shared/field.html" with field=form.difficulty %}
+{% include "shared/field.html" with field=form.duration_weeks %}
+{% include "shared/field.html" with field=form.sessions_per_week %}
+{% include "shared/field.html" with field=form.status %}
+{% include "shared/field.html" with field=form.goals wide=True %}
+{% include "shared/field.html" with field=form.short_description wide=True %}
+{% include "shared/field.html" with field=form.description wide=True %}
+</div></fieldset><fieldset class="upload-fields"><legend>파일 및 썸네일</legend><div class="form-grid">
+{% include "shared/field.html" with field=form.thumbnail_file %}
+{% include "shared/field.html" with field=form.routine_file %}
+</div></fieldset>
         {% if product %}<p class="muted">파일을 선택하지 않으면 기존 썸네일과 루틴 파일을 유지합니다.</p>{% endif %}
         <div class="actions"><button class="button" type="submit">저장하기</button><a class="button secondary" href="{% url 'products:seller_dashboard' %}">취소</a></div>
-    </form>
-</section>
+    </form><aside class="panel preview-panel"><h2>상품 미리보기</h2><p class="muted">입력한 정보가 상품에 어떻게 보이는지 확인하세요.</p><div class="preview-image">{% if product %}<img data-preview-image src="{{ product.thumbnail_url }}" alt="상품 썸네일 미리보기">{% else %}<img data-preview-image hidden alt="상품 썸네일 미리보기"><span data-preview-placeholder>썸네일을 업로드해 주세요</span>{% endif %}</div><span class="badge" data-preview="difficulty">난이도</span><h3 data-preview="title">운동 루틴 상품명</h3><p class="muted">{{ user.nickname }} 트레이너 <span class="badge">인증</span></p><strong class="price" data-preview="price">₩0</strong><div class="preview-facts"><span data-preview="category">운동 분야</span><span data-preview="duration_weeks">기간</span><span data-preview="sessions_per_week">주당 횟수</span></div><p class="preview-description" data-preview="description">프로그램의 구성과 운동 목표를 소개해 주세요.</p><p class="muted" data-file-name></p></aside></div>
+</div></section>
 {% endblock %}

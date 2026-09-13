@@ -41,6 +41,7 @@ class User(AbstractUser):
     email = models.EmailField("이메일", unique=True)
     full_name = models.CharField("이름", max_length=100)
     nickname = models.CharField("닉네임", max_length=50, unique=True)
+    email_verified_at = models.DateTimeField("이메일 인증시각", null=True, blank=True)
     role = models.CharField(
         "역할", max_length=20, choices=Role.choices, default=Role.MEMBER
     )
@@ -59,3 +60,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.nickname} ({self.email})"
+
+    @property
+    def is_email_verified(self):
+        return self.email_verified_at is not None

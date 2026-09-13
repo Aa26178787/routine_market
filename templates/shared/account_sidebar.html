@@ -1,0 +1,15 @@
+<aside class="account-sidebar">
+    <span class="avatar">{% include "shared/icon.html" with name="user" %}</span>
+    <h3>{{ user.nickname }}님</h3>
+    <p>오늘도 건강한 하루 되세요!</p>
+    <nav aria-label="마이페이지">
+        <a class="{% if request.resolver_match.url_name == 'profile_update' or request.resolver_match.url_name == 'email_change' or request.resolver_match.url_name == 'password_change' %}active{% endif %}" href="{% url 'accounts:profile_update' %}">내 프로필</a>
+        <a class="{% if request.resolver_match.url_name == 'account_deactivate' %}active{% endif %}" href="{% url 'accounts:account_deactivate' %}">계정 비활성화</a>
+        <a class="{% if request.resolver_match.url_name == 'purchase_history' %}active{% endif %}" href="{% url 'orders:purchase_history' %}">구매 내역</a>
+        <a class="{% if request.resolver_match.url_name == 'wishlist' %}active{% endif %}" href="{% url 'products:wishlist' %}">찜한 루틴</a>
+        <a class="{% if request.resolver_match.url_name == 'cart' %}active{% endif %}" href="{% url 'orders:cart' %}">장바구니</a>
+        {% if user.role != 'TRAINER' %}
+            <a href="{% url 'trainers:application_form' %}">트레이너 신청</a>
+        {% endif %}
+    </nav>
+</aside>

@@ -16,6 +16,28 @@ from .services import complete_virtual_payment, create_order_from_cart, user_can
 
 
 class OrderServiceTests(TestCase):
+    def test_cart_uses_account_sidebar_and_marks_cart_active(self):
+        self.client.force_login(self.buyer)
+
+        response = self.client.get(reverse("orders:cart"))
+
+        self.assertContains(response, 'aria-label="마이페이지"')
+        self.assertContains(
+            response,
+            f'class="active" href="{reverse("orders:cart")}">장바구니</a>',
+            html=False,
+        )
+
+    def test_purchase_button_uses_existing_cart_checkout_flow(self):
+        self.client.force_login(self.buyer)
+        response = self.client.post(
+            reverse("orders:cart_add", args=[self.product.pk]),
+            {"proceed": "checkout"},
+        )
+        self.assertRedirects(response, reverse("orders:checkout"))
+        self.assertTrue(CartItem.objects.filter(cart__user=self.buyer, product=self.product).exists())
+        self.assertFalse(Order.objects.filter(buyer=self.buyer).exists())
+
     def setUp(self):
         user_model = get_user_model()
         self.buyer = user_model.objects.create_user(
@@ -93,6 +115,20 @@ class OrderServiceTests(TestCase):
         self.assertTrue(user_can_download(user=self.buyer, order_item=item))
         self.assertFalse(CartItem.objects.filter(cart__user=self.buyer).exists())
 
+    def test_repeated_payment_post_does_not_change_paid_timestamp(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+
+        self.client.post(reverse("orders:pay", args=[order.order_number]))
+        order.refresh_from_db()
+        first_paid_at = order.paid_at
+        self.client.post(reverse("orders:pay", args=[order.order_number]))
+        order.refresh_from_db()
+
+        self.assertEqual(order.status, Order.Status.PAID)
+        self.assertEqual(order.paid_at, first_paid_at)
+        self.assertEqual(OrderItem.objects.filter(order=order).count(), 1)
+
     def test_checkout_payment_and_purchase_history_flow(self):
         self.client.force_login(self.buyer)
 
@@ -114,6 +150,33 @@ class OrderServiceTests(TestCase):
         self.assertEqual(order.status, Order.Status.PAID)
         history = self.client.get(reverse("orders:purchase_history"))
         self.assertContains(history, self.product.title)
+
+    def test_purchase_history_is_paginated_by_six_orders(self):
+        for index in range(7):
+            order = Order.objects.create(
+                buyer=self.buyer,
+                status=Order.Status.PAID,
+                total_amount=self.product.price,
+                paid_at=timezone.now(),
+            )
+            OrderItem.objects.create(
+                order=order,
+                product=self.product,
+                product_file=self.product.files.get(is_current=True),
+                seller=self.product.seller,
+                product_title=f"구매 루틴 {index}",
+                seller_name=self.product.seller.user.nickname,
+                unit_price=self.product.price,
+            )
+        self.client.force_login(self.buyer)
+
+        first_page = self.client.get(reverse("orders:purchase_history"))
+        second_page = self.client.get(
+            reverse("orders:purchase_history"), {"page": 2}
+        )
+
+        self.assertEqual(len(first_page.context["orders"]), 6)
+        self.assertEqual(len(second_page.context["orders"]), 1)
 
     def test_cancelled_order_returns_available_product_to_cart(self):
         order = create_order_from_cart(buyer=self.buyer)
@@ -206,3 +269,31 @@ class OrderServiceTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertFalse(DownloadLog.objects.exists())
+
+    def test_missing_download_file_redirects_with_user_message_without_log(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        complete_virtual_payment(order_id=order.pk, buyer=self.buyer)
+        item = order.items.get()
+        self.client.force_login(self.buyer)
+
+        with patch("apps.orders.views.default_storage.exists", return_value=False):
+            response = self.client.get(reverse("orders:download", args=[item.pk]), follow=True)
+
+        self.assertRedirects(response, reverse("orders:purchase_history"))
+        self.assertContains(response, "XLSX 파일을 불러올 수 없습니다")
+        self.assertFalse(DownloadLog.objects.filter(order_item=item).exists())
+
+    def test_storage_download_failure_redirects_without_creating_log(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        complete_virtual_payment(order_id=order.pk, buyer=self.buyer)
+        item = order.items.get()
+        self.client.force_login(self.buyer)
+
+        with (
+            patch("apps.orders.views.default_storage.exists", return_value=True),
+            patch("apps.orders.views.build_download_response", side_effect=OSError),
+        ):
+            response = self.client.get(reverse("orders:download", args=[item.pk]))
+
+        self.assertRedirects(response, reverse("orders:purchase_history"))
+        self.assertFalse(DownloadLog.objects.filter(order_item=item).exists())

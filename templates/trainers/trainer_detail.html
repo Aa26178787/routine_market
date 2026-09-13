@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load market %}
+
+{% block title %}{{ trainer.user.nickname }} 트레이너 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section{% if user.is_authenticated and user.pk == trainer.user_id %} account-layout seller-layout{% else %} trainer-profile-page{% endif %}">
+    {% if user.is_authenticated and user.pk == trainer.user_id %}
+        {% include "shared/seller_sidebar.html" %}
+        <div class="trainer-profile-page">
+    {% endif %}
+    <p class="breadcrumb"><a href="{% url 'core:home' %}">홈</a> › 인증 트레이너 › {{ trainer.user.nickname }}</p>
+    <header class="panel trainer-profile-hero">
+        <span class="avatar trainer-profile-avatar">{% include "shared/icon.html" with name="user" %}</span>
+        <div class="trainer-profile-copy">
+            <span class="badge">✓ 인증 트레이너</span>
+            <h1>{{ trainer.user.nickname }} 트레이너</h1>
+            <p>{{ trainer.specialty }} · 경력 {{ trainer.career_years }}년</p>
+            <p class="trainer-introduction">{{ trainer.introduction }}</p>
+            {% if trainer.activity_url %}<a href="{{ trainer.activity_url }}" target="_blank" rel="noopener noreferrer">외부 활동 프로필 보기 →</a>{% endif %}
+        </div>
+        <dl class="trainer-metrics">
+            <div><dt>판매 루틴</dt><dd>{{ product_count }}개</dd></div>
+            <div><dt>누적 판매</dt><dd>{{ sales_count }}건</dd></div>
+            <div><dt>트레이너 경력</dt><dd>{{ trainer.career_years }}년</dd></div>
+        </dl>
+    </header>
+    <section class="home-section">
+        <div class="result-heading"><div><p class="eyebrow">Trainer routines</p><h2>{{ trainer.user.nickname }} 트레이너의 루틴</h2></div><span>{{ product_count }}개</span></div>
+        <div class="product-grid">{% for product in products %}{% include "products/_product_card.html" %}{% empty %}<div class="empty-state">현재 판매 중인 운동 루틴이 없습니다.</div>{% endfor %}</div>
+    </section>
+    {% if user.is_authenticated and user.pk == trainer.user_id %}</div>{% endif %}
+</section>
+{% endblock %}

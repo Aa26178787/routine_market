@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}프로필 수정 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section account-layout">
+    {% include "shared/account_sidebar.html" %}
+    <div class="settings-content">
+        <div class="page-heading"><p class="eyebrow">My profile</p><h1>회원 프로필 수정</h1><p>서비스에 표시되는 회원 정보를 관리합니다.</p></div>
+        <form class="panel settings-form" method="post" novalidate>
+            {% csrf_token %}
+            <div class="field"><label>로그인 이메일</label><p>{{ user.email }}</p><a class="button secondary small" href="{% url 'accounts:email_change' %}">이메일 변경</a></div>
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}{% include "shared/field.html" with field=field %}{% endfor %}
+            <div class="actions"><button class="button" type="submit">변경사항 저장</button><a class="button secondary" href="{% url 'accounts:password_change' %}">비밀번호 변경</a></div>
+        </form>
+    </div>
+</section>
+{% endblock %}

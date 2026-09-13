@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}{% load i18n market_admin market %}
+{% block coltype %}colMS{% endblock %}
+{% block bodyclass %}{{ block.super }} dashboard market-dashboard{% endblock %}
+{% block content %}
+{% market_dashboard as dashboard %}
+<div id="content-main">
+<div class="admin-greeting"><h1>안녕하세요, {{ user.nickname|default:user.username }}님!</h1><p>루틴마켓의 회원과 상품, 주문을 한곳에서 관리하세요.</p></div>
+<div class="admin-metrics">{% for metric in dashboard.metrics %}<article><span>{{ metric.label }}</span><strong>{{ metric.count }}</strong></article>{% endfor %}</div>
+<div class="admin-grid">
+{% if perms.trainers.view_trainerapplication %}<section class="admin-panel"><h2>트레이너 승인 대기 <a href="{% url 'admin:trainers_trainerapplication_changelist' %}?status__exact=PENDING">전체 보기 →</a></h2>{% for application in dashboard.applications %}<div class="admin-application"><div><strong>{{ application.user.nickname }}</strong><span class="admin-badge pending">심사 대기</span><p>{{ application.specialty }} · 경력 {{ application.career_years }}년</p><small>{{ application.submitted_at|date:"Y.m.d" }} 신청</small></div><div class="admin-decision-actions"><a class="admin-action" href="{% url 'admin:trainers_trainerapplication_change' application.pk %}">신청 검토</a>{% if perms.trainers.change_trainerapplication %}<form method="post" action="{% url 'admin:trainers_trainerapplication_changelist' %}">{% csrf_token %}<input type="hidden" name="_selected_action" value="{{ application.pk }}"><button class="admin-approve" type="submit" name="action" value="approve_selected">승인</button><button class="admin-reject" type="submit" name="action" value="reject_selected">거절</button></form>{% endif %}</div></div>{% empty %}<p class="admin-empty">검토할 신청이 없습니다.</p>{% endfor %}<p class="admin-note">신청 목록에서 승인 / 거절 작업을 진행할 수 있습니다.</p></section>{% endif %}
+{% if perms.orders.view_order %}<section class="admin-panel"><h2>최근 주문 내역 <a href="{% url 'admin:orders_order_changelist' %}">전체 보기 →</a></h2><div class="admin-table-wrap"><table><thead><tr><th>주문번호</th><th>구매자</th><th>금액</th><th>상태</th></tr></thead><tbody>{% for order in dashboard.orders %}<tr><td><a href="{% url 'admin:orders_order_change' order.pk %}">{{ order.order_number|truncatechars:16 }}</a></td><td>{{ order.buyer.nickname }}</td><td>{{ order.total_amount|won }}</td><td><span class="admin-badge {{ order.status|lower }}">{{ order.get_status_display }}</span></td></tr>{% empty %}<tr><td colspan="4">주문 내역이 없습니다.</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+</div>
+<section class="admin-panel admin-management"><h2>관리 메뉴</h2>{% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}</section>
+</div>
+{% endblock %}
+{% block sidebar %}{% endblock %}

@@ -3,13 +3,18 @@
 {% block title %}로그인 - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container narrow section">
-    <div class="panel">
+<section class="auth-page"><div class="container"><div class="auth-heading"><p class="eyebrow">ROUTINE MARKET</p><h1>더 건강한 하루, <em>루틴마켓</em>과 함께</h1><p>검증된 트레이너의 루틴으로<br>당신의 목표에 한 걸음 더 가까워지세요.</p></div>
+    <div class="panel auth-card">{% include "shared/auth_tabs.html" %}<div class="auth-columns"><div>
         <p class="eyebrow">다시 오신 것을 환영합니다</p>
-        <h1>로그인</h1>
+        {% if next == '/trainers/apply/' %}
+            <h2>트레이너 신청을 위해 로그인해 주세요</h2>
+            <div class="notice trainer-login-notice">로그인하면 전문 분야와 경력, 자격 정보를 입력하는 트레이너 신청 화면으로 이동합니다.</div>
+        {% else %}
+            <h2>루틴마켓에 로그인하세요</h2><p class="muted">오늘의 루틴을 만나보세요.</p>
+        {% endif %}
         <form method="post" novalidate>
             {% csrf_token %}
-            {% if form.non_field_errors %}<div class="form-errors">이메일 또는 비밀번호를 확인해주세요.</div>{% endif %}
+            {% if form.non_field_errors %}<div class="form-errors">{% if form.is_rate_limited %}{{ form.non_field_errors }}{% else %}이메일 또는 비밀번호를 확인해주세요.{% endif %}</div>{% endif %}
             {% for field in form %}
                 <div class="field">
                     <label for="{{ field.id_for_label }}">{% if field.name == 'username' %}이메일{% else %}{{ field.label }}{% endif %}</label>
@@ -18,9 +23,10 @@
                 </div>
             {% endfor %}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-            <button class="button full" type="submit">로그인</button>
+            <button class="button full" type="submit">{% if next == '/trainers/apply/' %}로그인하고 트레이너 신청하기{% else %}로그인{% endif %}</button>
         </form>
-        <p class="form-footer">아직 계정이 없나요? <a href="{% url 'accounts:signup' %}">회원가입</a></p>
-    </div>
+        <p class="form-footer"><a href="{% url 'accounts:password_reset' %}">비밀번호를 잊으셨나요?</a></p>
+        <p class="form-footer">아직 계정이 없나요? <a href="{% url 'accounts:signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">회원가입</a></p>
+    </div><aside><h2>아직 회원이 아니신가요?</h2><p class="muted">나에게 맞는 루틴을 시작하세요.</p><a class="join-option" href="{% url 'accounts:signup' %}">{% include "shared/icon.html" with name="user" %}<strong>일반 회원가입 →</strong><p>운동 루틴 탐색 / 찜 / 구매<br>구매한 루틴 다운로드와 리뷰 작성</p></a><a class="join-option" href="{% url 'accounts:signup' %}?next={% url 'trainers:application_form' %}">{% include "shared/icon.html" with name="fitness" %}<strong>트레이너로 시작하기 →</strong><p>회원가입 후 전문 분야와 자격을 인증하고<br>나만의 운동 루틴을 판매하세요.</p></a></aside></div></div></div>
 </section>
 {% endblock %}

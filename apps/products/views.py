@@ -129,9 +129,13 @@ def product_detail(request, slug):
 @login_required
 def wishlist(request):
     items = (
-        request.user.wishlist_items.select_related(
-            "product__seller__user", "product__category"
-        )
+        request.user.wishlist_items.prefetch_related(Prefetch(
+            "product",
+            queryset=Product.objects.select_related("seller__user", "category").annotate(
+                average_rating=Avg("reviews__rating", filter=Q(reviews__is_visible=True)),
+                review_count=Count("reviews", filter=Q(reviews__is_visible=True)),
+            ),
+        ))
         .filter(product__status=Product.Status.PUBLISHED)
         .order_by("-created_at")
     )
@@ -157,6 +161,12 @@ def wishlist_toggle(request, product_id):
 @login_required
 def seller_dashboard(request):
     trainer = _verified_trainer(request)
+    sales_summary = OrderItem.objects.filter(
+        seller=trainer, order__status="PAID"
+    ).aggregate(
+        total_sales=Count("id"),
+        total_revenue=Sum("unit_price"),
+    )
     paid_sales = (
         OrderItem.objects.filter(product=OuterRef("pk"), order__status="PAID")
         .values("product")
@@ -179,7 +189,19 @@ def seller_dashboard(request):
         )
         .order_by("-created_at")
     )
-    return render(request, "products/seller_dashboard.html", {"products": products})
+    paginator = Paginator(products, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    return render(
+        request,
+        "products/seller_dashboard.html",
+        {
+            "products": page_obj,
+            "page_obj": page_obj,
+            "product_count": paginator.count,
+            "total_sales": sales_summary["total_sales"],
+            "total_revenue": sales_summary["total_revenue"] or 0,
+        },
+    )
 
 
 @login_required

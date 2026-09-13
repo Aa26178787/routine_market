@@ -1,15 +1,16 @@
 {% extends "base.html" %}
+{% load market %}
 
 {% block title %}{% if mode == 'create' %}리뷰 작성{% else %}리뷰 수정{% endif %} - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container narrow section">
+<section class="container section">
     <div class="page-heading">
         <p class="eyebrow">Verified review</p>
         <h1>{% if mode == 'create' %}구매자 리뷰 작성{% else %}리뷰 수정{% endif %}</h1>
         <p>{{ order_item.product_title }}</p>
     </div>
-    <form class="panel" method="post" novalidate>
+    <div class="studio-grid"><div><p class="notice"><span class="badge">✓ 구매 인증</span> 실제 구매한 상품에 대한 리뷰를 작성하고 있습니다.</p><form class="panel" method="post" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
         {% for field in form %}
@@ -20,6 +21,7 @@
             </div>
         {% endfor %}
         <div class="actions"><button class="button" type="submit">{% if mode == 'create' %}리뷰 등록{% else %}변경 저장{% endif %}</button><a class="button secondary" href="{% url 'orders:purchase_history' %}">취소</a></div>
-    </form>
+    </form></div><aside class="panel review-summary"><div class="preview-image"><img src="{{ order_item.product.thumbnail_url }}" alt="{{ order_item.product_title }}"></div><span class="badge">{{ order_item.product.get_difficulty_display }}</span><h2>{{ order_item.product_title }}</h2><p>{{ order_item.seller_name }} 트레이너</p><strong class="price">{{ order_item.unit_price|won }}</strong><div class="notice">실제 경험을 바탕으로 작성해 주세요.<br>프로그램 구성, 난이도, 운동 경험을 알려주시면 다른 구매자에게 도움이 됩니다.</div></aside></div>
+<section class="reviews-section"><h2>구매자들의 리뷰</h2>{% for item in other_reviews %}<article class="review"><div class="review-heading"><strong>{{ item.author.nickname }} <span class="badge">구매 인증</span></strong><span class="rating"><b>★</b> {{ item.rating }}.0</span></div><p>{{ item.content }}</p></article>{% empty %}<div class="empty-state">아직 공개된 리뷰가 없습니다.</div>{% endfor %}</section>
 </section>
 {% endblock %}

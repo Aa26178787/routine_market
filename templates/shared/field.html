@@ -1,0 +1,4 @@
+<div class="field {% if wide %}field-wide{% endif %} {% if field.name == 'goals' %}checkbox-field{% endif %}">
+<label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required" aria-hidden="true"> *</span>{% endif %}</label>
+{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}
+</div>

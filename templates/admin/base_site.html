@@ -1,0 +1,4 @@
+{% extends "admin/base.html" %}{% load static %}
+{% block title %}{{ title }} | 루틴마켓 관리자{% endblock %}
+{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}">루틴마켓</a><span class="admin-brand-label">관리자센터</span></div>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-market.css' %}">{% endblock %}

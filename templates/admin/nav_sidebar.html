@@ -1,0 +1,12 @@
+{% load i18n %}
+<button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="{% translate 'Toggle navigation' %}"></button>
+<nav class="sticky" id="nav-sidebar" aria-label="관리 메뉴">
+<a class="admin-nav-link" href="{% url 'admin:index' %}">대시보드</a>
+{% if perms.accounts.view_user or perms.accounts.change_user %}<a class="admin-nav-link" href="{% url 'admin:accounts_user_changelist' %}">회원 관리</a>{% endif %}
+{% if perms.trainers.view_trainerapplication or perms.trainers.change_trainerapplication %}<a class="admin-nav-link" href="{% url 'admin:trainers_trainerapplication_changelist' %}">트레이너 승인</a>{% endif %}
+{% if perms.products.view_product or perms.products.change_product %}<a class="admin-nav-link" href="{% url 'admin:products_product_changelist' %}">상품 관리</a>{% endif %}
+{% if perms.orders.view_order or perms.orders.change_order %}<a class="admin-nav-link" href="{% url 'admin:orders_order_changelist' %}">주문 내역</a>{% endif %}
+{% if perms.reviews.view_review or perms.reviews.change_review %}<a class="admin-nav-link" href="{% url 'admin:reviews_review_changelist' %}">리뷰 관리</a>{% endif %}
+{% if perms.products.view_category or perms.products.change_category %}<a class="admin-nav-link" href="{% url 'admin:products_category_changelist' %}">카테고리 관리</a>{% endif %}
+<details class="admin-other-menu"><summary>기타 데이터 관리</summary><input type="search" id="nav-filter" placeholder="메뉴 검색" aria-label="메뉴 검색">{% include 'admin/app_list.html' with app_list=available_apps show_changelinks=False %}</details>
+</nav>

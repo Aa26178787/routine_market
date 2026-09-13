@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load market %}
 
 {% block title %}구매 내역 - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container section">
-    <div class="dashboard-heading"><div><p class="eyebrow">My library</p><h1>구매 내역</h1></div><div class="metric"><span>총 가상 구매금액</span><strong>{{ total_spent }}원</strong></div></div>
-    <div class="stack">
+<section class="container section account-layout">{% include "shared/account_sidebar.html" %}<div>
+    <div class="dashboard-heading"><div><p class="eyebrow">My library</p><h1>구매 내역</h1></div><div class="metric"><span>총 가상 구매금액</span><strong>{{ total_spent|won }}</strong></div></div>
+    <p class="notice">구매한 루틴의 XLSX 파일을 다운로드할 수 있습니다. 파일은 개인적인 운동 목적으로 이용해 주세요.</p><div class="stack">
         {% for order in orders %}
             <article class="purchase-order">
                 <header><div><strong>{{ order.paid_at|date:"Y년 m월 d일" }}</strong><small>주문 {{ order.order_number }}</small></div><a href="{% url 'orders:detail' order.order_number %}">주문 상세</a></header>
                 {% for item in order.items.all %}
                     <div class="purchase-item">
-                        <div><h2>{{ item.product_title }}</h2><span>{{ item.seller_name }} · 파일 v{{ item.product_file.version }}</span></div>
+                        <img class="purchase-thumbnail" src="{{ item.product.thumbnail_url }}" alt=""><div class="purchase-item-info"><span class="badge">구매 완료</span><h2>{{ item.product_title }}</h2><span>{{ item.seller_name }} · 파일 v{{ item.product_file.version }}</span></div>
                         <div class="purchase-item-actions">
-                            <strong>{{ item.unit_price }}원</strong>
-                            <a class="button small" href="{% url 'orders:download' item.pk %}">파일 다운로드</a>
+                            <strong>{{ item.unit_price|won }}</strong>
+                            <a class="button small" href="{% url 'orders:download' item.pk %}">{% include "shared/icon.html" with name="download" %} XLSX 다운로드</a>
                             {% if item.review %}<a href="{% url 'reviews:update' item.review.pk %}">리뷰 수정</a>{% else %}<a href="{% url 'reviews:create' item.pk %}">리뷰 작성</a>{% endif %}
                         </div>
                     </div>
@@ -23,6 +24,6 @@
         {% empty %}
             <div class="empty-state"><p>구매한 운동 루틴이 없습니다.</p><a class="button" href="{% url 'products:list' %}">운동 루틴 둘러보기</a></div>
         {% endfor %}
-    </div>
-</section>
+    </div>{% include "shared/pagination.html" %}
+</div></section>
 {% endblock %}

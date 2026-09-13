@@ -3,7 +3,7 @@
 {% block title %}찜한 운동 루틴 - Routine Market{% endblock %}
 
 {% block content %}
-<section class="container section">
+<section class="container section account-layout">{% include "shared/account_sidebar.html" %}<div>
     <div class="page-heading">
         <p class="eyebrow">My wishlist</p>
         <h1>찜한 운동 루틴</h1>
@@ -16,5 +16,5 @@
             <div class="empty-state">찜한 운동 루틴이 없습니다.</div>
         {% endfor %}
     </div>
-</section>
+</div></section>
 {% endblock %}

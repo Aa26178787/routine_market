@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}계정 비활성화 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container section account-layout">
+    {% include "shared/account_sidebar.html" %}
+    <div class="settings-content">
+        <div class="page-heading">
+            <p class="eyebrow">Account security</p>
+            <h1>계정 비활성화</h1>
+            <p>비활성화하면 즉시 로그아웃되며 다시 로그인할 수 없습니다. 구매 및 판매 기록은 서비스 운영상 보관됩니다.</p>
+        </div>
+        <form class="panel settings-form" method="post" novalidate>
+            {% csrf_token %}
+            <div class="notice danger">계속하려면 현재 비밀번호를 입력하고 비활성화에 동의해 주세요.</div>
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            {% for field in form %}{% include "shared/field.html" with field=field %}{% endfor %}
+            <div class="actions">
+                <button class="button danger" type="submit">내 계정 비활성화</button>
+                <a class="button secondary" href="{% url 'accounts:profile_update' %}">취소</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

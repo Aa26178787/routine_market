@@ -1,0 +1,5 @@
+<nav class="auth-tabs" aria-label="계정 메뉴">
+    <a href="{% url 'accounts:login' %}" {% if request.resolver_match.url_name == 'login' and next != '/trainers/apply/' %}class="active" aria-current="page"{% endif %}>로그인</a>
+    <a href="{% url 'accounts:signup' %}" {% if request.resolver_match.url_name == 'signup' and next != '/trainers/apply/' %}class="active" aria-current="page"{% endif %}>일반 회원가입</a>
+    <a href="{% url 'accounts:signup' %}?next={% url 'trainers:application_form' %}" {% if next == '/trainers/apply/' %}class="active" aria-current="page"{% endif %}>트레이너 신청</a>
+</nav>

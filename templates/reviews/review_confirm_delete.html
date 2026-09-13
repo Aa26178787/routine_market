@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}리뷰 삭제 확인 - Routine Market{% endblock %}
+
+{% block content %}
+<section class="container narrow section">
+    <div class="panel confirm-card">
+        <span class="confirm-icon">!</span>
+        <p class="eyebrow">Delete review</p>
+        <h1>리뷰를 삭제할까요?</h1>
+        <p><strong>{{ review.product.title }}</strong>에 작성한 리뷰가 영구적으로 삭제됩니다.</p>
+        <blockquote>{{ review.content|truncatechars:180 }}</blockquote>
+        <form class="actions" method="post">
+            {% csrf_token %}
+            <button class="button danger-button" type="submit">리뷰 삭제</button>
+            <a class="button secondary" href="{% url 'products:detail' review.product.slug %}#reviews">취소</a>
+        </form>
+    </div>
+</section>
+{% endblock %}

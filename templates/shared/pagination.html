@@ -1,0 +1,21 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="페이지 이동">
+    {% if page_obj.has_previous %}
+        <a class="pagination-link" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="이전 페이지">‹</a>
+    {% else %}
+        <span class="pagination-link disabled" aria-hidden="true">‹</span>
+    {% endif %}
+    {% for number in page_obj.paginator.page_range %}
+        {% if number == page_obj.number %}
+            <span class="pagination-link active" aria-current="page">{{ number }}</span>
+        {% elif number >= page_obj.number|add:"-2" and number <= page_obj.number|add:"2" %}
+            <a class="pagination-link" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ number }}">{{ number }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+        <a class="pagination-link" href="?{% if query_string %}{{ query_string }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="다음 페이지">›</a>
+    {% else %}
+        <span class="pagination-link disabled" aria-hidden="true">›</span>
+    {% endif %}
+</nav>
+{% endif %}

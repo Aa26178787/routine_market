@@ -1,5 +1,6 @@
 .venv/
 .env
+*_credentials.csv
 __pycache__/
 *.py[cod]
 *.sqlite3

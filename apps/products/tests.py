@@ -1,5 +1,6 @@
 import io
 import tempfile
+from unittest.mock import patch
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from django.contrib.auth import get_user_model
@@ -9,9 +10,12 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.orders.models import Order, OrderItem
 from apps.trainers.models import TrainerProfile
 
+from .forms import ProductForm
 from .models import Category, ExerciseGoal, Product, ProductFile
+from .services import save_product
 
 
 def make_png_upload(name="thumbnail.png"):
@@ -157,6 +161,173 @@ class ProductViewTests(TestCase):
         self.assertEqual(product.files.get().version, 1)
         self.assertTrue(product.goals.filter(pk=self.goal.pk).exists())
 
+    def _update_form(self, product, *, routine_file):
+        form = ProductForm(
+            {
+                "title": product.title,
+                "short_description": product.short_description,
+                "description": product.description,
+                "category": product.category_id,
+                "goals": [self.goal.pk],
+                "difficulty": product.difficulty,
+                "duration_weeks": product.duration_weeks,
+                "sessions_per_week": product.sessions_per_week,
+                "price": product.price,
+                "status": Product.Status.DRAFT,
+            },
+            {"routine_file": routine_file},
+            instance=product,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        return form
+
+    def test_new_uploads_are_deleted_when_product_database_save_fails(self):
+        form = ProductForm(
+            {
+                "title": "저장 실패 루틴",
+                "short_description": "업로드 정리 테스트",
+                "description": "설명",
+                "category": self.category.pk,
+                "goals": [self.goal.pk],
+                "difficulty": Product.Difficulty.BEGINNER,
+                "duration_weeks": 4,
+                "sessions_per_week": 3,
+                "price": 10000,
+                "status": Product.Status.DRAFT,
+            },
+            {
+                "thumbnail_file": make_png_upload(),
+                "routine_file": make_xlsx_upload(),
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        with (
+            patch("apps.products.services.save_thumbnail", return_value="new/thumb.png"),
+            patch(
+                "apps.products.services.save_routine_file",
+                return_value={
+                    "object_key": "new/routine.xlsx",
+                    "original_filename": "routine.xlsx",
+                    "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "size_bytes": 100,
+                    "checksum_sha256": "d" * 64,
+                },
+            ),
+            patch("apps.products.services.Product.full_clean", side_effect=IntegrityError),
+            patch("apps.products.services.delete_upload") as delete_upload,
+        ):
+            with self.assertRaises(IntegrityError):
+                save_product(
+                    form=form,
+                    user=self.seller_user,
+                    thumbnail_file=form.cleaned_data["thumbnail_file"],
+                    routine_file=form.cleaned_data["routine_file"],
+                )
+
+        self.assertCountEqual(
+            [call.args[0] for call in delete_upload.call_args_list],
+            ["new/thumb.png", "new/routine.xlsx"],
+        )
+        self.assertFalse(Product.objects.filter(title="저장 실패 루틴").exists())
+
+    def test_replaced_file_is_preserved_when_an_order_references_it(self):
+        product = Product.objects.create(
+            seller=self.trainer,
+            category=self.category,
+            title="구매 버전 보존 루틴",
+            slug="preserve-purchased-version",
+            short_description="구매 버전 보존",
+            description="설명",
+            difficulty=Product.Difficulty.BEGINNER,
+            duration_weeks=4,
+            sessions_per_week=3,
+            price=10000,
+            thumbnail_object_key="old/thumb.png",
+        )
+        old_file = ProductFile.objects.create(
+            product=product,
+            version=1,
+            object_key="old/routine.xlsx",
+            original_filename="old.xlsx",
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            size_bytes=100,
+            checksum_sha256="a" * 64,
+        )
+        order = Order.objects.create(buyer=self.member, total_amount=product.price)
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_file=old_file,
+            seller=self.trainer,
+            product_title=product.title,
+            seller_name=self.seller_user.nickname,
+            unit_price=product.price,
+        )
+        form = self._update_form(product, routine_file=make_xlsx_upload("new.xlsx"))
+        with (
+            patch(
+                "apps.products.services.save_routine_file",
+                return_value={
+                    "object_key": "new/routine.xlsx",
+                    "original_filename": "new.xlsx",
+                    "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "size_bytes": 100,
+                    "checksum_sha256": "b" * 64,
+                },
+            ),
+            patch("apps.products.services.delete_upload") as delete_upload,
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            save_product(form=form, user=self.seller_user, routine_file=form.cleaned_data["routine_file"])
+
+        old_file.refresh_from_db()
+        self.assertFalse(old_file.is_current)
+        self.assertTrue(ProductFile.objects.filter(pk=old_file.pk).exists())
+        delete_upload.assert_not_called()
+
+    def test_replaced_unpurchased_file_is_removed_after_commit(self):
+        product = Product.objects.create(
+            seller=self.trainer,
+            category=self.category,
+            title="미구매 버전 정리 루틴",
+            slug="cleanup-unpurchased-version",
+            short_description="미구매 버전 정리",
+            description="설명",
+            difficulty=Product.Difficulty.BEGINNER,
+            duration_weeks=4,
+            sessions_per_week=3,
+            price=10000,
+            thumbnail_object_key="old/thumb.png",
+        )
+        old_file = ProductFile.objects.create(
+            product=product,
+            version=1,
+            object_key="old/unpurchased.xlsx",
+            original_filename="old.xlsx",
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            size_bytes=100,
+            checksum_sha256="a" * 64,
+        )
+        form = self._update_form(product, routine_file=make_xlsx_upload("new.xlsx"))
+        with (
+            patch(
+                "apps.products.services.save_routine_file",
+                return_value={
+                    "object_key": "new/routine.xlsx",
+                    "original_filename": "new.xlsx",
+                    "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "size_bytes": 100,
+                    "checksum_sha256": "b" * 64,
+                },
+            ),
+            patch("apps.products.services.delete_upload", return_value=True) as delete_upload,
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            save_product(form=form, user=self.seller_user, routine_file=form.cleaned_data["routine_file"])
+
+        self.assertFalse(ProductFile.objects.filter(pk=old_file.pk).exists())
+        delete_upload.assert_called_once_with("old/unpurchased.xlsx")
+
     def test_public_list_only_shows_published_matching_products(self):
         published = Product.objects.create(
             seller=self.trainer,
@@ -220,3 +391,31 @@ class ProductViewTests(TestCase):
 
         self.client.post(reverse("products:wishlist_toggle", args=[product.pk]))
         self.assertFalse(product.wishlist_items.filter(user=self.member).exists())
+
+    def test_seller_dashboard_is_paginated_and_shows_totals(self):
+        for index in range(11):
+            Product.objects.create(
+                seller=self.trainer,
+                category=self.category,
+                title=f"판매 상품 {index}",
+                slug=f"seller-product-{index}",
+                short_description="판매 관리 페이지네이션 테스트",
+                description="설명",
+                difficulty=Product.Difficulty.BEGINNER,
+                duration_weeks=4,
+                sessions_per_week=3,
+                price=10000,
+                thumbnail_object_key=f"product-thumbnails/{index}.png",
+                status=Product.Status.DRAFT,
+            )
+        self.client.force_login(self.seller_user)
+
+        first_page = self.client.get(reverse("products:seller_dashboard"))
+        second_page = self.client.get(
+            reverse("products:seller_dashboard"), {"page": 2}
+        )
+
+        self.assertEqual(len(first_page.context["products"]), 10)
+        self.assertEqual(len(second_page.context["products"]), 1)
+        self.assertEqual(first_page.context["product_count"], 11)
+        self.assertEqual(first_page.context["total_revenue"], 0)

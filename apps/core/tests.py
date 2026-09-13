@@ -30,13 +30,16 @@ class SeedDemoCommandTests(TestCase):
             call_command("seed_demo", reset=True, verbosity=0)
 
         user_model = get_user_model()
-        self.assertEqual(user_model.objects.filter(email__endswith="@routine-market.local").count(), 4)
-        self.assertEqual(TrainerApplication.objects.count(), 2)
-        self.assertEqual(TrainerProfile.objects.count(), 1)
-        self.assertEqual(Product.objects.filter(slug__startswith="demo-").count(), 3)
-        self.assertEqual(ProductFile.objects.count(), 3)
-        self.assertEqual(Order.objects.filter(status=Order.Status.PAID).count(), 1)
-        self.assertEqual(Review.objects.count(), 1)
+        self.assertEqual(
+            user_model.objects.filter(email__endswith="@routine-market.local").count(),
+            11,
+        )
+        self.assertEqual(TrainerApplication.objects.count(), 5)
+        self.assertEqual(TrainerProfile.objects.count(), 4)
+        self.assertEqual(Product.objects.filter(slug__startswith="demo-").count(), 8)
+        self.assertEqual(ProductFile.objects.count(), 8)
+        self.assertEqual(Order.objects.filter(status=Order.Status.PAID).count(), 17)
+        self.assertEqual(Review.objects.count(), 17)
         self.assertEqual(CartItem.objects.count(), 1)
         self.assertEqual(WishlistItem.objects.count(), 1)
 
