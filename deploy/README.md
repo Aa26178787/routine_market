@@ -37,7 +37,9 @@ DuckDNS 도메인과 Let's Encrypt 인증서를 적용해 HTTPS로 서비스한�
 
 토스페이먼츠 키는 `/etc/routine-market.env`에 `TOSS_PAYMENTS_CLIENT_KEY`와
 `TOSS_PAYMENTS_SECRET_KEY`로 저장한다. 테스트 검증이 끝나기 전에는 테스트 키를
-사용하고, 시크릿 키는 저장소와 브라우저에 절대 포함하지 않는다.
+사용하고, 시크릿 키는 저장소와 브라우저에 절대 포함하지 않는다. 배포 시에는
+Secrets Manager의 `routine-market/production/toss-payments`에서
+`deploy/configure_toss_payments.py`를 통해 보호된 환경 파일로 주입한다.
 
 EC2 역할의 S3 접근은 `s3-bucket-policy.json`으로 버킷의 `media/`
 경로에만 허용한다. RDS 관리 비밀에는 EC2 역할을 대상으로
