@@ -14,10 +14,19 @@
         </div><aside class="panel order-summary"><h2>결제 정보</h2><div class="checkout-total"><span>총 주문금액</span><strong>{{ order.total_amount|won }}</strong></div>
 
         {% if order.status == 'PENDING' %}
-            <p class="notice">가상 결제 버튼을 누르면 구매와 다운로드 권한이 확정됩니다.</p>
-            <div class="actions split-actions"><form method="post" action="{% url 'orders:pay' order.order_number %}">{% csrf_token %}<button class="button" type="submit">가상 결제 완료</button></form><form method="post" action="{% url 'orders:cancel' order.order_number %}">{% csrf_token %}<button class="button secondary" type="submit">주문 취소</button></form></div>
+            {% if toss_payments_enabled %}
+                <p class="notice">토스페이먼츠 결제창에서 결제수단 인증 후 서버 승인이 완료되면 다운로드 권한이 확정됩니다.</p>
+            {% else %}
+                <p class="notice danger">현재 결제 설정을 준비 중입니다. 관리자에게 토스페이먼츠 테스트 키 설정을 요청해 주세요.</p>
+            {% endif %}
+            <div class="actions split-actions">
+                {% if toss_payments_enabled %}<a class="button" href="{% url 'orders:pay' order.order_number %}">토스로 결제하기</a>{% endif %}
+                <form method="post" action="{% url 'orders:cancel' order.order_number %}">{% csrf_token %}<button class="button secondary" type="submit">주문 취소</button></form>
+            </div>
         {% elif order.status == 'PAID' %}
             <p class="notice success">결제가 완료되었습니다. 구매 내역에서 상품을 확인할 수 있습니다.</p>
+            {% if order.payment_method %}<p class="payment-meta">결제수단: {{ order.payment_method }}</p>{% endif %}
+            {% if order.payment_receipt_url %}<a class="text-link" href="{{ order.payment_receipt_url }}" target="_blank" rel="noopener">결제 영수증 보기</a>{% endif %}
             <a class="button full" href="{% url 'orders:purchase_history' %}">구매 내역 보기</a>
         {% else %}
             <p class="notice danger">취소된 주문입니다. 상품은 장바구니로 돌아갔습니다.</p>

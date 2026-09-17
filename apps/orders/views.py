@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
@@ -8,12 +9,15 @@ from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.crypto import salted_hmac
 
 from apps.products.models import Product
 
 from .downloads import build_download_response
 from .models import Cart, CartItem, DownloadLog, Order, OrderItem
-from .services import cancel_pending_order, complete_virtual_payment, create_order_from_cart
+from .services import cancel_pending_order, confirm_toss_payment, create_order_from_cart
+from .toss_payments import TossPaymentsError
 
 
 logger = logging.getLogger(__name__)
@@ -96,20 +100,88 @@ def order_detail(request, order_number):
         Order.objects.filter(buyer=request.user).prefetch_related("items__product"),
         order_number=order_number,
     )
-    return render(request, "orders/order_detail.html", {"order": order})
+    return render(
+        request,
+        "orders/order_detail.html",
+        {"order": order, "toss_payments_enabled": settings.TOSS_PAYMENTS_ENABLED},
+    )
 
 
 @login_required
 def pay_order(request, order_number):
-    if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items"),
+        order_number=order_number,
+        buyer=request.user,
+    )
+    if order.status != Order.Status.PENDING:
+        messages.info(request, "결제 대기 중인 주문이 아닙니다.")
+        return redirect("orders:detail", order_number=order.order_number)
+    if not settings.TOSS_PAYMENTS_ENABLED:
+        messages.error(request, "토스페이먼츠 테스트 키 설정이 필요합니다.")
+        return redirect("orders:detail", order_number=order.order_number)
+
+    items = list(order.items.all())
+    first_title = items[0].product_title if items else "운동 루틴"
+    order_name = first_title if len(items) == 1 else f"{first_title} 외 {len(items) - 1}건"
+    customer_key = "rm_" + salted_hmac(
+        "toss-payments-customer", str(request.user.pk)
+    ).hexdigest()[:40]
+    return render(
+        request,
+        "orders/payment.html",
+        {
+            "order": order,
+            "order_name": order_name[:100],
+            "customer_key": customer_key,
+            "client_key": settings.TOSS_PAYMENTS_CLIENT_KEY,
+            "success_url": request.build_absolute_uri(
+                reverse("orders:toss_success", args=[order.order_number])
+            ),
+            "fail_url": request.build_absolute_uri(
+                reverse("orders:toss_fail", args=[order.order_number])
+            ),
+        },
+    )
+
+
+@login_required
+def toss_payment_success(request, order_number):
     order = get_object_or_404(Order, order_number=order_number, buyer=request.user)
+    payment_key = request.GET.get("paymentKey", "")
+    toss_order_id = request.GET.get("orderId", "")
     try:
-        complete_virtual_payment(order_id=order.pk, buyer=request.user)
+        amount = int(request.GET.get("amount", ""))
+    except (TypeError, ValueError):
+        amount = -1
+
+    try:
+        confirm_toss_payment(
+            order_id=order.pk,
+            buyer=request.user,
+            payment_key=payment_key,
+            toss_order_id=toss_order_id,
+            amount=amount,
+        )
     except ValidationError as exc:
         messages.error(request, "; ".join(exc.messages))
+    except TossPaymentsError as exc:
+        logger.warning("Toss payment confirmation failed: %s", exc.code)
+        messages.error(request, exc.public_message)
     else:
-        messages.success(request, "가상 결제가 완료되었습니다.")
+        messages.success(request, "토스페이먼츠 결제가 완료되었습니다.")
+    return redirect("orders:detail", order_number=order.order_number)
+
+
+@login_required
+def toss_payment_fail(request, order_number):
+    order = get_object_or_404(Order, order_number=order_number, buyer=request.user)
+    code = (request.GET.get("code") or "PAYMENT_FAILED")[:100]
+    logger.info("Toss payment authentication failed: %s", code)
+    if code == "PAY_PROCESS_CANCELED":
+        messages.info(request, "결제를 취소했습니다. 주문은 결제 대기 상태로 유지됩니다.")
+    else:
+        messages.error(request, "결제를 진행하지 못했습니다. 다시 시도해 주세요.")
     return redirect("orders:detail", order_number=order.order_number)
 
 

@@ -20,7 +20,7 @@
                         </article>
                     {% endfor %}
                 </div>
-                <aside class="panel order-summary"><h2>주문 요약</h2><div><span>선택한 상품 수</span><strong>{{ items|length }}개</strong></div><div class="summary-total"><span>총 주문 금액</span><strong>{{ total_amount|won }}</strong></div><a class="button full" href="{% url 'orders:checkout' %}">주문하기</a><a class="button secondary full" href="{% url 'products:list' %}">쇼핑 계속하기</a><p class="notice">디지털 운동 루틴 상품입니다.<br>가상 결제 완료 후 구매 내역에서 파일을 다운로드할 수 있습니다.</p></aside>
+                <aside class="panel order-summary"><h2>주문 요약</h2><div><span>선택한 상품 수</span><strong>{{ items|length }}개</strong></div><div class="summary-total"><span>총 주문 금액</span><strong>{{ total_amount|won }}</strong></div><a class="button full" href="{% url 'orders:checkout' %}">주문하기</a><a class="button secondary full" href="{% url 'products:list' %}">쇼핑 계속하기</a><p class="notice">디지털 운동 루틴 상품입니다.<br>토스 결제 완료 후 구매 내역에서 파일을 다운로드할 수 있습니다.</p></aside>
             </div>
         {% else %}
             <div class="empty-state"><p>장바구니가 비어 있습니다.</p><a class="button" href="{% url 'products:list' %}">운동 루틴 둘러보기</a></div>

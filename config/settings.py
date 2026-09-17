@@ -174,6 +174,15 @@ EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = env_bool("DJANGO_EMAIL_USE_TLS", True)
 EMAIL_TIMEOUT = int(os.getenv("DJANGO_EMAIL_TIMEOUT", "10"))
 
+# Toss Payments: 클라이언트 키만 브라우저에 전달하고 시크릿 키는 서버에서만 사용합니다.
+TOSS_PAYMENTS_CLIENT_KEY = os.getenv("TOSS_PAYMENTS_CLIENT_KEY", "").strip()
+TOSS_PAYMENTS_SECRET_KEY = os.getenv("TOSS_PAYMENTS_SECRET_KEY", "").strip()
+TOSS_PAYMENTS_API_BASE_URL = os.getenv(
+    "TOSS_PAYMENTS_API_BASE_URL", "https://api.tosspayments.com"
+).rstrip("/")
+TOSS_PAYMENTS_TIMEOUT = int(os.getenv("TOSS_PAYMENTS_TIMEOUT", "10"))
+TOSS_PAYMENTS_ENABLED = bool(TOSS_PAYMENTS_CLIENT_KEY and TOSS_PAYMENTS_SECRET_KEY)
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

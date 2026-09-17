@@ -32,9 +32,18 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("order_number", "buyer", "status", "total_amount", "paid_at", "created_at")
-    list_filter = ("status", "created_at", "paid_at")
-    search_fields = ("order_number", "buyer__email", "buyer__nickname")
+    list_display = (
+        "order_number",
+        "buyer",
+        "status",
+        "total_amount",
+        "payment_provider",
+        "payment_method",
+        "paid_at",
+        "created_at",
+    )
+    list_filter = ("status", "payment_provider", "payment_method", "created_at", "paid_at")
+    search_fields = ("order_number", "payment_key", "buyer__email", "buyer__nickname")
     readonly_fields = (
         "order_number",
         "buyer",
@@ -42,6 +51,10 @@ class OrderAdmin(admin.ModelAdmin):
         "total_amount",
         "paid_at",
         "cancelled_at",
+        "payment_provider",
+        "payment_key",
+        "payment_method",
+        "payment_receipt_url",
         "created_at",
         "updated_at",
     )

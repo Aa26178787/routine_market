@@ -12,7 +12,13 @@ from apps.products.models import Category, Product, ProductFile
 from apps.trainers.models import TrainerProfile
 
 from .models import Cart, CartItem, DownloadLog, Order, OrderItem
-from .services import complete_virtual_payment, create_order_from_cart, user_can_download
+from .services import (
+    complete_virtual_payment,
+    confirm_toss_payment,
+    create_order_from_cart,
+    user_can_download,
+)
+from .toss_payments import TossPaymentsError
 
 
 class OrderServiceTests(TestCase):
@@ -115,21 +121,44 @@ class OrderServiceTests(TestCase):
         self.assertTrue(user_can_download(user=self.buyer, order_item=item))
         self.assertFalse(CartItem.objects.filter(cart__user=self.buyer).exists())
 
-    def test_repeated_payment_post_does_not_change_paid_timestamp(self):
+    @patch("apps.orders.services.TossPaymentsClient.confirm")
+    def test_toss_payment_is_idempotent_and_keeps_paid_timestamp(self, confirm):
         order = create_order_from_cart(buyer=self.buyer)
-        self.client.force_login(self.buyer)
+        payment_key = "test-payment-key"
+        confirm.return_value = {
+            "status": "DONE",
+            "orderId": str(order.order_number),
+            "paymentKey": payment_key,
+            "totalAmount": order.total_amount,
+            "method": "카드",
+            "receipt": {"url": "https://example.com/receipt"},
+        }
 
-        self.client.post(reverse("orders:pay", args=[order.order_number]))
-        order.refresh_from_db()
-        first_paid_at = order.paid_at
-        self.client.post(reverse("orders:pay", args=[order.order_number]))
-        order.refresh_from_db()
+        first = confirm_toss_payment(
+            order_id=order.pk,
+            buyer=self.buyer,
+            payment_key=payment_key,
+            toss_order_id=str(order.order_number),
+            amount=order.total_amount,
+        )
+        second = confirm_toss_payment(
+            order_id=order.pk,
+            buyer=self.buyer,
+            payment_key=payment_key,
+            toss_order_id=str(order.order_number),
+            amount=order.total_amount,
+        )
 
-        self.assertEqual(order.status, Order.Status.PAID)
-        self.assertEqual(order.paid_at, first_paid_at)
+        self.assertEqual(first.status, Order.Status.PAID)
+        self.assertEqual(second.paid_at, first.paid_at)
+        self.assertEqual(second.payment_provider, "TOSS_PAYMENTS")
+        self.assertEqual(second.payment_method, "카드")
+        self.assertEqual(second.payment_receipt_url, "https://example.com/receipt")
+        confirm.assert_called_once()
         self.assertEqual(OrderItem.objects.filter(order=order).count(), 1)
 
-    def test_checkout_payment_and_purchase_history_flow(self):
+    @patch("apps.orders.services.TossPaymentsClient.confirm")
+    def test_checkout_toss_payment_and_purchase_history_flow(self, confirm):
         self.client.force_login(self.buyer)
 
         response = self.client.post(reverse("orders:checkout"))
@@ -141,7 +170,23 @@ class OrderServiceTests(TestCase):
         self.assertEqual(order.status, Order.Status.PENDING)
         self.assertFalse(CartItem.objects.filter(cart__user=self.buyer).exists())
 
-        response = self.client.post(reverse("orders:pay", args=[order.order_number]))
+        payment_key = "test-payment-key-flow"
+        confirm.return_value = {
+            "status": "DONE",
+            "orderId": str(order.order_number),
+            "paymentKey": payment_key,
+            "totalAmount": order.total_amount,
+            "method": "카드",
+            "receipt": None,
+        }
+        response = self.client.get(
+            reverse("orders:toss_success", args=[order.order_number]),
+            {
+                "paymentKey": payment_key,
+                "orderId": str(order.order_number),
+                "amount": order.total_amount,
+            },
+        )
         order.refresh_from_db()
 
         self.assertRedirects(
@@ -150,6 +195,81 @@ class OrderServiceTests(TestCase):
         self.assertEqual(order.status, Order.Status.PAID)
         history = self.client.get(reverse("orders:purchase_history"))
         self.assertContains(history, self.product.title)
+
+    def test_payment_page_requires_server_configuration(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+
+        with self.settings(
+            TOSS_PAYMENTS_ENABLED=False,
+            TOSS_PAYMENTS_CLIENT_KEY="",
+            TOSS_PAYMENTS_SECRET_KEY="",
+        ):
+            response = self.client.get(reverse("orders:pay", args=[order.order_number]))
+
+        self.assertRedirects(
+            response, reverse("orders:detail", args=[order.order_number])
+        )
+
+    def test_payment_page_exposes_client_key_but_not_secret_key(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+
+        with self.settings(
+            TOSS_PAYMENTS_ENABLED=True,
+            TOSS_PAYMENTS_CLIENT_KEY="test_gck_example",
+            TOSS_PAYMENTS_SECRET_KEY="test_gsk_never-expose",
+        ):
+            response = self.client.get(reverse("orders:pay", args=[order.order_number]))
+
+        self.assertContains(response, "test_gck_example")
+        self.assertNotContains(response, "test_gsk_never-expose")
+        self.assertContains(response, "js.tosspayments.com/v2/standard")
+        self.assertContains(response, "widgets.renderPaymentWindow()")
+
+    @patch("apps.orders.services.TossPaymentsClient.confirm")
+    def test_toss_amount_mismatch_is_rejected_before_confirmation(self, confirm):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+
+        response = self.client.get(
+            reverse("orders:toss_success", args=[order.order_number]),
+            {
+                "paymentKey": "test-payment-key",
+                "orderId": str(order.order_number),
+                "amount": order.total_amount - 1,
+            },
+        )
+        order.refresh_from_db()
+
+        self.assertRedirects(
+            response, reverse("orders:detail", args=[order.order_number])
+        )
+        self.assertEqual(order.status, Order.Status.PENDING)
+        confirm.assert_not_called()
+
+    @patch("apps.orders.services.TossPaymentsClient.confirm")
+    def test_toss_api_failure_keeps_order_pending(self, confirm):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+        confirm.side_effect = TossPaymentsError(
+            "PAYMENT_SERVICE_UNAVAILABLE", "결제 서비스 연결이 원활하지 않습니다."
+        )
+
+        response = self.client.get(
+            reverse("orders:toss_success", args=[order.order_number]),
+            {
+                "paymentKey": "test-payment-key",
+                "orderId": str(order.order_number),
+                "amount": order.total_amount,
+            },
+        )
+        order.refresh_from_db()
+
+        self.assertRedirects(
+            response, reverse("orders:detail", args=[order.order_number])
+        )
+        self.assertEqual(order.status, Order.Status.PENDING)
 
     def test_purchase_history_is_paginated_by_six_orders(self):
         for index in range(7):

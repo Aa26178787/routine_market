@@ -27,6 +27,7 @@ h1,h2,h3{color:var(--text);letter-spacing:-.04em;line-height:1.35}h1{font-size:3
 .product-editor textarea{min-height:120px;max-height:240px}.product-editor .field{margin-bottom:18px}.product-editor legend{font-size:18px}
 .seller-layout{grid-template-columns:180px minmax(0,1fr);gap:28px}.seller-layout .studio-grid{grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr)}
 .seller-layout .account-sidebar .notice{margin-top:48px}.product-editor .upload-fields{padding-top:20px;border-top:1px solid var(--line)}
+.payment-page{max-width:760px}.payment-confirm-panel>div{display:flex;justify-content:space-between;gap:24px;padding:15px 0;border-bottom:1px solid var(--line)}.payment-confirm-panel .payment-amount strong{font-size:26px;color:var(--primary)}.payment-confirm-panel .notice{margin-top:22px}.payment-meta{margin:8px 0;color:var(--muted);font-size:13px}
 @media(max-width:1000px){.seller-layout{grid-template-columns:1fr}.seller-layout .account-sidebar{border-right:0;border-bottom:1px solid var(--line);padding-bottom:12px}.seller-layout .account-sidebar nav{flex-direction:row;flex-wrap:wrap}.seller-layout .account-sidebar .notice{display:none}}
 @media(max-width:760px){.seller-layout .studio-grid{grid-template-columns:1fr}}
 .breadcrumb{font-size:12px;color:var(--muted);margin-bottom:24px}.breadcrumb a{color:var(--muted)}

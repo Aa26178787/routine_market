@@ -7,6 +7,7 @@ from apps.accounts.models import User
 from apps.products.models import Product, ProductFile
 
 from .models import Cart, CartItem, Order, OrderItem
+from .toss_payments import TossPaymentsClient, TossPaymentsError
 
 
 @transaction.atomic
@@ -85,6 +86,76 @@ def complete_virtual_payment(*, order_id: int, buyer: User) -> Order:
     purchased_product_ids = order.items.values_list("product_id", flat=True)
     CartItem.objects.filter(cart__user=buyer, product_id__in=purchased_product_ids).delete()
     return order
+
+
+def confirm_toss_payment(
+    *, order_id: int, buyer: User, payment_key: str, toss_order_id: str, amount: int
+) -> Order:
+    """서버에 저장한 주문과 인증 결과를 검증한 뒤 토스 결제를 승인합니다."""
+    order = Order.objects.get(pk=order_id)
+    if order.buyer_id != buyer.pk:
+        raise PermissionDenied("자신의 주문만 결제할 수 있습니다.")
+    if order.status == Order.Status.PAID:
+        if order.payment_key == payment_key:
+            return order
+        raise ValidationError("이미 다른 결제로 완료된 주문입니다.")
+    if order.status != Order.Status.PENDING:
+        raise ValidationError("결제 대기 주문만 결제할 수 있습니다.")
+    if toss_order_id != str(order.order_number):
+        raise ValidationError("주문번호가 일치하지 않습니다.")
+    if amount != order.total_amount:
+        raise ValidationError("결제 금액이 주문 금액과 일치하지 않습니다.")
+    if not payment_key or len(payment_key) > 200:
+        raise ValidationError("유효하지 않은 결제 정보입니다.")
+
+    payment = TossPaymentsClient().confirm(
+        payment_key=payment_key,
+        order_id=toss_order_id,
+        amount=amount,
+    )
+    if (
+        payment.get("status") != "DONE"
+        or payment.get("orderId") != toss_order_id
+        or payment.get("paymentKey") != payment_key
+        or payment.get("totalAmount") != amount
+    ):
+        raise TossPaymentsError(
+            "INVALID_PAYMENT_RESPONSE",
+            "결제 승인 결과를 확인할 수 없습니다. 관리자에게 문의해 주세요.",
+        )
+
+    with transaction.atomic():
+        locked_order = Order.objects.select_for_update().get(pk=order_id)
+        if locked_order.status == Order.Status.PAID:
+            if locked_order.payment_key == payment_key:
+                return locked_order
+            raise ValidationError("이미 다른 결제로 완료된 주문입니다.")
+        if locked_order.status != Order.Status.PENDING:
+            raise ValidationError("결제 대기 주문만 결제할 수 있습니다.")
+
+        receipt = payment.get("receipt") or {}
+        locked_order.status = Order.Status.PAID
+        locked_order.paid_at = timezone.now()
+        locked_order.payment_provider = "TOSS_PAYMENTS"
+        locked_order.payment_key = payment_key
+        locked_order.payment_method = str(payment.get("method") or "")[:50]
+        locked_order.payment_receipt_url = str(receipt.get("url") or "")[:500]
+        locked_order.save(
+            update_fields=[
+                "status",
+                "paid_at",
+                "payment_provider",
+                "payment_key",
+                "payment_method",
+                "payment_receipt_url",
+                "updated_at",
+            ]
+        )
+        purchased_product_ids = locked_order.items.values_list("product_id", flat=True)
+        CartItem.objects.filter(
+            cart__user=buyer, product_id__in=purchased_product_ids
+        ).delete()
+    return locked_order
 
 
 def downloadable_order_items(*, user: User) -> QuerySet[OrderItem]:

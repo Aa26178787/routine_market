@@ -65,6 +65,12 @@ class Order(TimeStampedModel):
     total_amount = models.PositiveIntegerField("총 주문금액", default=0)
     paid_at = models.DateTimeField("결제 완료시각", null=True, blank=True)
     cancelled_at = models.DateTimeField("취소시각", null=True, blank=True)
+    payment_provider = models.CharField("결제 제공자", max_length=30, blank=True)
+    payment_key = models.CharField(
+        "외부 결제키", max_length=200, null=True, blank=True, unique=True
+    )
+    payment_method = models.CharField("결제수단", max_length=50, blank=True)
+    payment_receipt_url = models.URLField("영수증 URL", max_length=500, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

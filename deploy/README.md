@@ -10,15 +10,14 @@
 
 ## 현재 배포
 
-- 서비스 주소: `http://3.35.122.226/`
-- 상태 확인: `http://3.35.122.226/health/`
+- 서비스 주소: `https://routine-market.duckdns.org/`
+- 상태 확인: `https://routine-market.duckdns.org/health/`
 - EC2: `i-09918a6f0f845e8de` (`t3.micro`, Ubuntu 24.04)
 - RDS: `routine-market-db` (PostgreSQL 16.13, `db.t4g.micro`, Single-AZ)
 - S3: `routine-market-108327566686-ap-northeast-2`
 - 운영 리전: `ap-northeast-2`
 
-현재 주소는 HTTP이다. 로그인과 구매 흐름 검증은 완료했지만 실제 공개 운영 전에는
-도메인과 HTTPS를 적용해야 한다.
+DuckDNS 도메인과 Let's Encrypt 인증서를 적용해 HTTPS로 서비스한다.
 
 운영 데모 계정은 저장소에 기재된 개발용 기본 비밀번호를 사용하지 않는다.
 배포 전용 비밀번호는 Secrets Manager의
@@ -35,6 +34,10 @@
 `DJANGO_SECURE_SSL_REDIRECT=false`, `DJANGO_SECURE_HSTS_SECONDS=0`,
 `DJANGO_SESSION_COOKIE_SECURE=false`, `DJANGO_CSRF_COOKIE_SECURE=false`를 사용한다.
 도메인 연결 후 HTTPS를 적용하면서 네 값을 운영 보안값으로 변경한다.
+
+토스페이먼츠 키는 `/etc/routine-market.env`에 `TOSS_PAYMENTS_CLIENT_KEY`와
+`TOSS_PAYMENTS_SECRET_KEY`로 저장한다. 테스트 검증이 끝나기 전에는 테스트 키를
+사용하고, 시크릿 키는 저장소와 브라우저에 절대 포함하지 않는다.
 
 EC2 역할의 S3 접근은 `s3-bucket-policy.json`으로 버킷의 `media/`
 경로에만 허용한다. RDS 관리 비밀에는 EC2 역할을 대상으로

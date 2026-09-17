@@ -116,6 +116,10 @@ for name in (
     "DJANGO_EMAIL_HOST_PASSWORD",
     "DJANGO_EMAIL_USE_TLS",
     "DJANGO_DEFAULT_FROM_EMAIL",
+    "TOSS_PAYMENTS_CLIENT_KEY",
+    "TOSS_PAYMENTS_SECRET_KEY",
+    "TOSS_PAYMENTS_API_BASE_URL",
+    "TOSS_PAYMENTS_TIMEOUT",
 ):
     if existing_environment.get(name):
         environment[name] = existing_environment[name]
