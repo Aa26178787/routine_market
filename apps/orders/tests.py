@@ -226,6 +226,25 @@ class OrderServiceTests(TestCase):
         self.assertNotContains(response, "test_gsk_never-expose")
         self.assertContains(response, "js.tosspayments.com/v2/standard")
         self.assertContains(response, "widgets.renderPaymentWindow()")
+        self.assertContains(response, 'window.addEventListener("load", openPaymentWindow')
+
+    def test_order_detail_opens_toss_window_from_payment_button(self):
+        order = create_order_from_cart(buyer=self.buyer)
+        self.client.force_login(self.buyer)
+
+        with self.settings(
+            TOSS_PAYMENTS_ENABLED=True,
+            TOSS_PAYMENTS_CLIENT_KEY="test_gck_example",
+            TOSS_PAYMENTS_SECRET_KEY="test_gsk_never-expose",
+        ):
+            response = self.client.get(
+                reverse("orders:detail", args=[order.order_number])
+            )
+
+        self.assertContains(response, 'id="toss-payment-button"')
+        self.assertContains(response, "widgets.renderPaymentWindow()")
+        self.assertNotContains(response, reverse("orders:pay", args=[order.order_number]))
+        self.assertNotContains(response, "test_gsk_never-expose")
 
     @patch("apps.orders.services.TossPaymentsClient.confirm")
     def test_toss_amount_mismatch_is_rejected_before_confirmation(self, confirm):

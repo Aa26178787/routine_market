@@ -20,9 +20,10 @@
                 <p class="notice danger">현재 결제 설정을 준비 중입니다. 관리자에게 토스페이먼츠 테스트 키 설정을 요청해 주세요.</p>
             {% endif %}
             <div class="actions split-actions">
-                {% if toss_payments_enabled %}<a class="button" href="{% url 'orders:pay' order.order_number %}">토스로 결제하기</a>{% endif %}
+                {% if toss_payments_enabled %}<button class="button" id="toss-payment-button" type="button">토스로 결제하기</button>{% endif %}
                 <form method="post" action="{% url 'orders:cancel' order.order_number %}">{% csrf_token %}<button class="button secondary" type="submit">주문 취소</button></form>
             </div>
+            {% if toss_payments_enabled %}<p class="form-errors" id="payment-error" hidden></p>{% endif %}
         {% elif order.status == 'PAID' %}
             <p class="notice success">결제가 완료되었습니다. 구매 내역에서 상품을 확인할 수 있습니다.</p>
             {% if order.payment_method %}<p class="payment-meta">결제수단: {{ order.payment_method }}</p>{% endif %}
@@ -34,4 +35,7 @@
         {% endif %}
     </aside></div>
 </section>
+{% if order.status == 'PENDING' and toss_payments_enabled %}
+    {% include "orders/_toss_payment_script.html" %}
+{% endif %}
 {% endblock %}

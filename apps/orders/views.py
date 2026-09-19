@@ -23,6 +23,24 @@ from .toss_payments import TossPaymentsError
 logger = logging.getLogger(__name__)
 
 
+def _toss_payment_context(request, order):
+    items = list(order.items.all())
+    first_title = items[0].product_title if items else "운동 루틴"
+    order_name = first_title if len(items) == 1 else f"{first_title} 외 {len(items) - 1}건"
+    return {
+        "order_name": order_name[:100],
+        "customer_key": "rm_"
+        + salted_hmac("toss-payments-customer", str(request.user.pk)).hexdigest()[:40],
+        "client_key": settings.TOSS_PAYMENTS_CLIENT_KEY,
+        "success_url": request.build_absolute_uri(
+            reverse("orders:toss_success", args=[order.order_number])
+        ),
+        "fail_url": request.build_absolute_uri(
+            reverse("orders:toss_fail", args=[order.order_number])
+        ),
+    }
+
+
 def _purchased_product_ids(user):
     return OrderItem.objects.filter(
         order__buyer=user, order__status=Order.Status.PAID
@@ -100,11 +118,10 @@ def order_detail(request, order_number):
         Order.objects.filter(buyer=request.user).prefetch_related("items__product"),
         order_number=order_number,
     )
-    return render(
-        request,
-        "orders/order_detail.html",
-        {"order": order, "toss_payments_enabled": settings.TOSS_PAYMENTS_ENABLED},
-    )
+    context = {"order": order, "toss_payments_enabled": settings.TOSS_PAYMENTS_ENABLED}
+    if order.status == Order.Status.PENDING and settings.TOSS_PAYMENTS_ENABLED:
+        context.update(_toss_payment_context(request, order))
+    return render(request, "orders/order_detail.html", context)
 
 
 @login_required
@@ -121,27 +138,12 @@ def pay_order(request, order_number):
         messages.error(request, "토스페이먼츠 테스트 키 설정이 필요합니다.")
         return redirect("orders:detail", order_number=order.order_number)
 
-    items = list(order.items.all())
-    first_title = items[0].product_title if items else "운동 루틴"
-    order_name = first_title if len(items) == 1 else f"{first_title} 외 {len(items) - 1}건"
-    customer_key = "rm_" + salted_hmac(
-        "toss-payments-customer", str(request.user.pk)
-    ).hexdigest()[:40]
+    context = {"order": order, "auto_open": True}
+    context.update(_toss_payment_context(request, order))
     return render(
         request,
         "orders/payment.html",
-        {
-            "order": order,
-            "order_name": order_name[:100],
-            "customer_key": customer_key,
-            "client_key": settings.TOSS_PAYMENTS_CLIENT_KEY,
-            "success_url": request.build_absolute_uri(
-                reverse("orders:toss_success", args=[order.order_number])
-            ),
-            "fail_url": request.build_absolute_uri(
-                reverse("orders:toss_fail", args=[order.order_number])
-            ),
-        },
+        context,
     )
 
 

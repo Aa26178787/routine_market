@@ -1,0 +1,47 @@
+{{ client_key|json_script:"toss-client-key" }}
+{{ customer_key|json_script:"toss-customer-key" }}
+{{ order_name|json_script:"toss-order-name" }}
+{{ success_url|json_script:"toss-success-url" }}
+{{ fail_url|json_script:"toss-fail-url" }}
+<script src="https://js.tosspayments.com/v2/standard"></script>
+<script>
+(() => {
+    const readJson = (id) => JSON.parse(document.getElementById(id).textContent);
+    const button = document.getElementById("toss-payment-button");
+    const errorBox = document.getElementById("payment-error");
+    const tossPayments = TossPayments(readJson("toss-client-key"));
+    const widgets = tossPayments.widgets({customerKey: readJson("toss-customer-key")});
+
+    const openPaymentWindow = async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        errorBox.hidden = true;
+        try {
+            await widgets.setAmount({currency: "KRW", value: {{ order.total_amount }}});
+            const paymentWindow = await widgets.renderPaymentWindow();
+            paymentWindow.on("paymentRequest", async () => {
+                await widgets.requestPayment({
+                    orderId: "{{ order.order_number }}",
+                    orderName: readJson("toss-order-name"),
+                    successUrl: readJson("toss-success-url"),
+                    failUrl: readJson("toss-fail-url"),
+                    customerEmail: "{{ request.user.email|escapejs }}",
+                    customerName: "{{ request.user.full_name|escapejs }}"
+                });
+            });
+            paymentWindow.on("cancel", () => {
+                button.disabled = false;
+            });
+        } catch (error) {
+            if (error.code !== "USER_CANCEL") {
+                errorBox.textContent = "결제창을 열지 못했습니다. 잠시 후 다시 시도해 주세요.";
+                errorBox.hidden = false;
+            }
+            button.disabled = false;
+        }
+    };
+
+    button.addEventListener("click", openPaymentWindow);
+    {% if auto_open %}window.addEventListener("load", openPaymentWindow, {once: true});{% endif %}
+})();
+</script>
