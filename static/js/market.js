@@ -60,6 +60,11 @@
     const file = event.target.files[0];
     preview.querySelector("[data-file-name]").textContent = file ? file.name + " · " + (file.size / 1024 / 1024).toFixed(1) + " MB" : "";
   });
+  editor.elements.namedItem("detail_images")?.addEventListener("change", event => {
+    const count = event.target.files.length;
+    const label = preview.querySelector("[data-detail-file-count]");
+    if (label) label.textContent = count ? `상세 이미지 ${count}장 선택됨` : "";
+  });
   window.addEventListener("pagehide", () => { if (objectURL) URL.revokeObjectURL(objectURL); });
   sync();
 })();

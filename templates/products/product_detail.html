@@ -43,7 +43,32 @@
     </div>
 
     <nav class="detail-tabs" aria-label="상품 상세 정보"><a href="#description">상품 정보</a><a href="#trainer">트레이너 정보</a><a href="#reviews">리뷰 ({{ product.review_count }})</a></nav><div class="content-grid">
-        <article class="panel prose" id="description"><h2>프로그램 소개</h2>{{ product.description|linebreaks }}</article>
+        <article class="panel prose product-detail-content" id="description"><h2>프로그램 소개</h2>
+            {% if has_detail_access %}
+                {{ product.description|linebreaks }}
+                {% if product.detail_images.all %}<div class="product-detail-gallery">
+                    {% for image in product.detail_images.all %}<img src="{{ image.image_url }}" alt="{{ product.title }} 상세 이미지 {{ forloop.counter }}" loading="lazy">{% endfor %}
+                </div>{% endif %}
+            {% else %}
+                {{ description_preview|linebreaks }}
+                <div class="locked-detail" aria-label="구매 후 공개되는 상세 콘텐츠">
+                    <div class="locked-detail-preview" aria-hidden="true">
+                        <img src="{{ product.thumbnail_url }}" alt="">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="locked-detail-message">
+                        <span class="locked-detail-icon" aria-hidden="true">🔒</span>
+                        <strong>상세 프로그램은 구매 후 확인할 수 있어요</strong>
+                        <p>트레이너가 작성한 전체 설명과 상세 이미지, 운동 루틴 파일이 공개됩니다.</p>
+                        {% if user.is_authenticated %}
+                            <form method="post" action="{% url 'orders:cart_add' product.pk %}">{% csrf_token %}<button class="button" type="submit" name="proceed" value="checkout">구매하고 전체 보기</button></form>
+                        {% else %}
+                            <a class="button" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">로그인 후 구매하기</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </article>
         <aside class="panel" id="trainer"><h2>트레이너 소개</h2><p>{{ product.seller.introduction }}</p><a href="{% url 'trainers:detail' product.seller.pk %}">공개 프로필과 판매 루틴 보기 →</a></aside>
     </div>
 

@@ -7,7 +7,7 @@
     <div class="page-heading">
         <p class="eyebrow">Seller studio</p>
         <h1>{% if mode == 'create' %}운동 루틴 상품 등록{% else %}상품 수정{% endif %}</h1>
-        <p>구매 전 확인할 수 있는 정보와 실제 XLSX 루틴 파일을 등록하세요.</p>
+        <p>상품 소개와 상세 이미지를 구성하고 실제 XLSX 루틴 파일을 등록하세요.</p>
     </div>
     <div class="studio-grid"><form class="panel product-editor" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
@@ -23,12 +23,18 @@
 {% include "shared/field.html" with field=form.goals wide=True %}
 {% include "shared/field.html" with field=form.short_description wide=True %}
 {% include "shared/field.html" with field=form.description wide=True %}
-</div></fieldset><fieldset class="upload-fields"><legend>파일 및 썸네일</legend><div class="form-grid">
+</div></fieldset><fieldset class="upload-fields"><legend>이미지 및 루틴 파일</legend><div class="form-grid">
 {% include "shared/field.html" with field=form.thumbnail_file %}
 {% include "shared/field.html" with field=form.routine_file %}
+{% include "shared/field.html" with field=form.detail_images wide=True %}
 </div></fieldset>
-        {% if product %}<p class="muted">파일을 선택하지 않으면 기존 썸네일과 루틴 파일을 유지합니다.</p>{% endif %}
+        {% if product %}
+            <p class="muted">파일을 선택하지 않으면 기존 썸네일과 루틴 파일을 유지합니다. 새 상세 이미지는 기존 이미지 뒤에 추가됩니다.</p>
+            {% if product.detail_images.all %}<div class="existing-detail-images" aria-label="현재 상세 이미지">
+                {% for image in product.detail_images.all %}<figure><img src="{{ image.image_url }}" alt="현재 상세 이미지 {{ forloop.counter }}"><figcaption>상세 이미지 {{ forloop.counter }}</figcaption></figure>{% endfor %}
+            </div>{% endif %}
+        {% endif %}
         <div class="actions"><button class="button" type="submit">저장하기</button><a class="button secondary" href="{% url 'products:seller_dashboard' %}">취소</a></div>
-    </form><aside class="panel preview-panel"><h2>상품 미리보기</h2><p class="muted">입력한 정보가 상품에 어떻게 보이는지 확인하세요.</p><div class="preview-image">{% if product %}<img data-preview-image src="{{ product.thumbnail_url }}" alt="상품 썸네일 미리보기">{% else %}<img data-preview-image hidden alt="상품 썸네일 미리보기"><span data-preview-placeholder>썸네일을 업로드해 주세요</span>{% endif %}</div><span class="badge" data-preview="difficulty">난이도</span><h3 data-preview="title">운동 루틴 상품명</h3><p class="muted">{{ user.nickname }} 트레이너 <span class="badge">인증</span></p><strong class="price" data-preview="price">₩0</strong><div class="preview-facts"><span data-preview="category">운동 분야</span><span data-preview="duration_weeks">기간</span><span data-preview="sessions_per_week">주당 횟수</span></div><p class="preview-description" data-preview="description">프로그램의 구성과 운동 목표를 소개해 주세요.</p><p class="muted" data-file-name></p></aside></div>
+    </form><aside class="panel preview-panel"><h2>상품 미리보기</h2><p class="muted">입력한 정보가 상품에 어떻게 보이는지 확인하세요.</p><div class="preview-image">{% if product %}<img data-preview-image src="{{ product.thumbnail_url }}" alt="상품 썸네일 미리보기">{% else %}<img data-preview-image hidden alt="상품 썸네일 미리보기"><span data-preview-placeholder>썸네일을 업로드해 주세요</span>{% endif %}</div><span class="badge" data-preview="difficulty">난이도</span><h3 data-preview="title">운동 루틴 상품명</h3><p class="muted">{{ user.nickname }} 트레이너 <span class="badge">인증</span></p><strong class="price" data-preview="price">₩0</strong><div class="preview-facts"><span data-preview="category">운동 분야</span><span data-preview="duration_weeks">기간</span><span data-preview="sessions_per_week">주당 횟수</span></div><p class="preview-description" data-preview="description">프로그램의 구성과 운동 목표를 소개해 주세요.</p><p class="muted" data-detail-file-count></p><p class="muted" data-file-name></p></aside></div>
 </div></section>
 {% endblock %}

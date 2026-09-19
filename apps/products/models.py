@@ -118,6 +118,37 @@ class Product(TimeStampedModel):
         return default_storage.url(self.thumbnail_object_key)
 
 
+class ProductDetailImage(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="detail_images",
+        verbose_name="상품",
+    )
+    object_key = models.CharField("상세 이미지 객체 키", max_length=500, unique=True)
+    original_filename = models.CharField("원본 파일명", max_length=255)
+    sort_order = models.PositiveSmallIntegerField("표시 순서", default=0)
+    created_at = models.DateTimeField("업로드시각", auto_now_add=True)
+
+    class Meta:
+        ordering = ["sort_order", "pk"]
+        verbose_name = "상품 상세 이미지"
+        verbose_name_plural = "상품 상세 이미지"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "sort_order"],
+                name="uniq_product_detail_image_sort_order",
+            )
+        ]
+
+    @property
+    def image_url(self):
+        return default_storage.url(self.object_key)
+
+    def __str__(self):
+        return f"{self.product.title} - {self.original_filename}"
+
+
 class ProductGoal(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     goal = models.ForeignKey(ExerciseGoal, on_delete=models.PROTECT)

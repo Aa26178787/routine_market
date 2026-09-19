@@ -4,8 +4,8 @@ from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from django.utils.text import slugify
 
-from .models import Product, ProductFile
-from .storage import delete_upload, save_routine_file, save_thumbnail
+from .models import Product, ProductDetailImage, ProductFile
+from .storage import delete_upload, save_detail_image, save_routine_file, save_thumbnail
 
 
 def _unique_slug(title: str, *, product_id: int | None = None) -> str:
@@ -26,7 +26,9 @@ def _assert_verified_trainer(user):
     return profile
 
 
-def save_product(*, form, user, thumbnail_file=None, routine_file=None) -> Product:
+def save_product(
+    *, form, user, thumbnail_file=None, routine_file=None, detail_images=None
+) -> Product:
     uploaded_keys = []
     old_thumbnail_key = ""
     stale_file_ids = []
@@ -53,6 +55,23 @@ def save_product(*, form, user, thumbnail_file=None, routine_file=None) -> Produ
                 product.published_at = timezone.now()
             product.save()
             form.save_m2m()
+
+            new_detail_images = list(detail_images or [])
+            existing_detail_count = product.detail_images.count()
+            if existing_detail_count + len(new_detail_images) > 5:
+                raise ValidationError("상세 이미지는 상품당 최대 5장까지 등록할 수 있습니다.")
+            for offset, detail_image in enumerate(new_detail_images):
+                object_key, original_filename = save_detail_image(
+                    uploaded_file=detail_image,
+                    product_id=product.pk,
+                )
+                uploaded_keys.append(object_key)
+                ProductDetailImage.objects.create(
+                    product=product,
+                    object_key=object_key,
+                    original_filename=original_filename,
+                    sort_order=existing_detail_count + offset,
+                )
 
             if routine_file:
                 stale_file_ids = list(

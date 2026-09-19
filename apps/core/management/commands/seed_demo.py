@@ -19,6 +19,7 @@ from apps.products.models import (
     Category,
     ExerciseGoal,
     Product,
+    ProductDetailImage,
     ProductFile,
     WishlistItem,
 )
@@ -516,6 +517,19 @@ class Command(BaseCommand):
                         accent=spec["colors"][1],
                     ),
                 )
+                exercise_names = ", ".join(row[1] for row in spec["rows"])
+                detailed_description = (
+                    f"{spec['description']}\n\n"
+                    f"이 프로그램은 총 {spec['weeks']}주 동안 주 {spec['sessions']}회 진행하도록 설계했습니다. "
+                    "처음부터 무리하게 강도를 높이지 않고, 매주 수행 기록을 확인하며 안정적으로 다음 단계로 넘어갑니다.\n\n"
+                    f"주요 구성\n- 핵심 동작: {exercise_names}\n"
+                    "- 운동 전 준비 동작과 운동 후 회복 가이드\n"
+                    "- 반복 횟수, 세트 수, 강도 조절 기준\n"
+                    "- 컨디션이 좋지 않은 날 사용할 수 있는 대체 동작\n\n"
+                    "추천 대상\n운동 계획을 매번 새로 짜기 어렵거나, 정해진 순서에 따라 꾸준히 운동하고 싶은 분께 추천합니다. "
+                    "각 동작은 통증이 없는 범위에서 진행하고 개인의 운동 경험과 회복 상태에 맞춰 강도를 조절해 주세요.\n\n"
+                    "구매 후 제공되는 루틴 파일에는 주차별 운동 순서와 세트·반복 기준, 수행 메모가 정리되어 있습니다."
+                )
                 product, _ = Product.objects.update_or_create(
                     slug=spec["slug"],
                     defaults={
@@ -523,7 +537,7 @@ class Command(BaseCommand):
                         "category": Category.objects.get(slug=spec["category"]),
                         "title": spec["title"],
                         "short_description": spec["short_description"],
-                        "description": spec["description"],
+                        "description": detailed_description,
                         "difficulty": spec["difficulty"],
                         "duration_weeks": spec["weeks"],
                         "sessions_per_week": spec["sessions"],
@@ -534,6 +548,22 @@ class Command(BaseCommand):
                     },
                 )
                 product.goals.set(ExerciseGoal.objects.filter(slug__in=spec["goals"]))
+
+                for detail_index, colors in enumerate(
+                    (spec["colors"], (spec["colors"][1], spec["colors"][0]))
+                ):
+                    detail_key = _save_if_missing(
+                        f"demo/product-detail-images-v1/{spec['slug']}-{detail_index + 1}.png",
+                        _thumbnail_bytes(primary=colors[0], accent=colors[1]),
+                    )
+                    ProductDetailImage.objects.update_or_create(
+                        product=product,
+                        sort_order=detail_index,
+                        defaults={
+                            "object_key": detail_key,
+                            "original_filename": f"{spec['slug']}-detail-{detail_index + 1}.png",
+                        },
+                    )
 
                 routine_bytes = _xlsx_bytes(title="운동 루틴", rows=spec["rows"])
                 routine_key = _save_if_missing(

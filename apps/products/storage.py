@@ -24,6 +24,13 @@ def save_thumbnail(*, uploaded_file, trainer_id: int) -> str:
     return object_key
 
 
+def save_detail_image(*, uploaded_file, product_id: int) -> tuple[str, str]:
+    return _save_upload(
+        uploaded_file=uploaded_file,
+        prefix=f"product-detail-images/{product_id}",
+    )
+
+
 def save_routine_file(*, uploaded_file, product_id: int) -> dict:
     digest = hashlib.sha256()
     for chunk in uploaded_file.chunks():

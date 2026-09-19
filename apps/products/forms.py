@@ -4,6 +4,18 @@ from .models import Product
 from .validators import validate_routine_file, validate_thumbnail
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.FileField):
+    widget = MultipleFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"})
+
+    def clean(self, data, initial=None):
+        files = data if isinstance(data, (list, tuple)) else [data]
+        return [super().clean(item, initial) for item in files if item]
+
+
 class ProductForm(forms.ModelForm):
     thumbnail_file = forms.FileField(
         label="상품 썸네일",
@@ -16,6 +28,12 @@ class ProductForm(forms.ModelForm):
         required=False,
         validators=[validate_routine_file],
         help_text="XLSX 형식, 최대 20MB",
+    )
+    detail_images = MultipleImageField(
+        label="상품 상세 이미지",
+        required=False,
+        validators=[validate_thumbnail],
+        help_text="JPG, PNG 또는 WEBP, 이미지당 최대 5MB · 최대 5장",
     )
 
     class Meta:
@@ -44,4 +62,7 @@ class ProductForm(forms.ModelForm):
                 self.add_error("thumbnail_file", "새 상품에는 썸네일이 필요합니다.")
             if not cleaned_data.get("routine_file"):
                 self.add_error("routine_file", "새 상품에는 운동 루틴 파일이 필요합니다.")
+        existing_count = self.instance.detail_images.count() if self.instance.pk else 0
+        if existing_count + len(cleaned_data.get("detail_images") or []) > 5:
+            self.add_error("detail_images", "상세 이미지는 상품당 최대 5장까지 등록할 수 있습니다.")
         return cleaned_data

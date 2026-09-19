@@ -14,7 +14,7 @@ from apps.orders.models import Order, OrderItem
 from apps.trainers.models import TrainerProfile
 
 from .forms import ProductForm
-from .models import Category, ExerciseGoal, Product, ProductFile
+from .models import Category, ExerciseGoal, Product, ProductDetailImage, ProductFile
 from .services import save_product
 
 
@@ -150,6 +150,10 @@ class ProductViewTests(TestCase):
             "status": Product.Status.PUBLISHED,
             "thumbnail_file": make_png_upload(),
             "routine_file": make_xlsx_upload(),
+            "detail_images": [
+                make_png_upload("detail-1.png"),
+                make_png_upload("detail-2.png"),
+            ],
         }
 
         with tempfile.TemporaryDirectory() as media_root, self.settings(MEDIA_ROOT=media_root):
@@ -159,7 +163,65 @@ class ProductViewTests(TestCase):
         product = Product.objects.get(title="5x5 근력 프로그램")
         self.assertEqual(product.status, Product.Status.PUBLISHED)
         self.assertEqual(product.files.get().version, 1)
+        self.assertEqual(product.detail_images.count(), 2)
         self.assertTrue(product.goals.filter(pk=self.goal.pk).exists())
+
+    def test_detail_content_is_locked_until_product_is_purchased(self):
+        product = Product.objects.create(
+            seller=self.trainer,
+            category=self.category,
+            title="구매자 전용 상세 루틴",
+            slug="locked-detail-routine",
+            short_description="상세 잠금 테스트",
+            description=("구매 전 소개 문장 " * 30) + "구매자전용비밀내용",
+            difficulty=Product.Difficulty.BEGINNER,
+            duration_weeks=4,
+            sessions_per_week=3,
+            price=9000,
+            thumbnail_object_key="product-thumbnails/locked.png",
+            status=Product.Status.PUBLISHED,
+            published_at=timezone.now(),
+        )
+        detail_image = ProductDetailImage.objects.create(
+            product=product,
+            object_key="product-detail-images/locked/detail.png",
+            original_filename="detail.png",
+        )
+        product_file = ProductFile.objects.create(
+            product=product,
+            version=1,
+            object_key="routine-files/locked.xlsx",
+            original_filename="locked.xlsx",
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            size_bytes=100,
+            checksum_sha256="f" * 64,
+        )
+
+        public_response = self.client.get(reverse("products:detail", args=[product.slug]))
+        self.assertContains(public_response, "상세 프로그램은 구매 후 확인할 수 있어요")
+        self.assertNotContains(public_response, "구매자전용비밀내용")
+        self.assertNotContains(public_response, detail_image.object_key)
+
+        order = Order.objects.create(
+            buyer=self.member,
+            status=Order.Status.PAID,
+            total_amount=product.price,
+            paid_at=timezone.now(),
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_file=product_file,
+            seller=self.trainer,
+            product_title=product.title,
+            seller_name=self.seller_user.nickname,
+            unit_price=product.price,
+        )
+        self.client.force_login(self.member)
+
+        purchased_response = self.client.get(reverse("products:detail", args=[product.slug]))
+        self.assertContains(purchased_response, "구매자전용비밀내용")
+        self.assertContains(purchased_response, detail_image.object_key)
 
     def _update_form(self, product, *, routine_file):
         form = ProductForm(

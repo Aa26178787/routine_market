@@ -93,6 +93,7 @@ def product_detail(request, slug):
         .select_related("seller__user", "category")
         .prefetch_related(
             "goals",
+            "detail_images",
             Prefetch(
                 "reviews",
                 queryset=Review.objects.filter(is_visible=True).select_related("author"),
@@ -114,6 +115,14 @@ def product_detail(request, slug):
         is_purchased = product.order_items.filter(
             order__buyer=request.user, order__status="PAID"
         ).exists()
+    has_detail_access = bool(
+        is_purchased
+        or (request.user.is_authenticated and product.seller.user_id == request.user.id)
+        or (request.user.is_authenticated and request.user.is_staff)
+    )
+    description_preview = product.description[:260].rsplit(" ", 1)[0]
+    if not description_preview:
+        description_preview = product.description[:260]
     return render(
         request,
         "products/product_detail.html",
@@ -122,6 +131,8 @@ def product_detail(request, slug):
             "is_wished": is_wished,
             "is_in_cart": is_in_cart,
             "is_purchased": is_purchased,
+            "has_detail_access": has_detail_access,
+            "description_preview": description_preview,
         },
     )
 
@@ -215,6 +226,7 @@ def product_create(request):
                 user=request.user,
                 thumbnail_file=form.cleaned_data["thumbnail_file"],
                 routine_file=form.cleaned_data["routine_file"],
+                detail_images=form.cleaned_data.get("detail_images"),
             )
             messages.success(request, "상품이 등록되었습니다.")
             return redirect("products:seller_dashboard")
@@ -235,6 +247,7 @@ def product_update(request, pk):
                 user=request.user,
                 thumbnail_file=form.cleaned_data.get("thumbnail_file"),
                 routine_file=form.cleaned_data.get("routine_file"),
+                detail_images=form.cleaned_data.get("detail_images"),
             )
             messages.success(request, "상품이 수정되었습니다.")
             return redirect("products:seller_dashboard")

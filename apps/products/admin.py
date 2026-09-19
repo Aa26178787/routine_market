@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import Category, ExerciseGoal, Product, ProductFile, ProductGoal, WishlistItem
+from .models import (
+    Category,
+    ExerciseGoal,
+    Product,
+    ProductDetailImage,
+    ProductFile,
+    ProductGoal,
+    WishlistItem,
+)
 
 
 class ProductFileInline(admin.TabularInline):
@@ -12,6 +20,12 @@ class ProductFileInline(admin.TabularInline):
 class ProductGoalInline(admin.TabularInline):
     model = ProductGoal
     extra = 1
+
+
+class ProductDetailImageInline(admin.TabularInline):
+    model = ProductDetailImage
+    extra = 0
+    readonly_fields = ("created_at",)
 
 
 @admin.register(Product)
@@ -29,7 +43,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ("title", "short_description", "description", "seller__user__nickname")
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ("created_at", "updated_at", "published_at")
-    inlines = [ProductGoalInline, ProductFileInline]
+    inlines = [ProductGoalInline, ProductDetailImageInline, ProductFileInline]
 
 
 @admin.register(Category)
