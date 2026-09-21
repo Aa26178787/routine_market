@@ -165,6 +165,11 @@ class ProductViewTests(TestCase):
         self.assertEqual(product.files.get().version, 1)
         self.assertEqual(product.detail_images.count(), 2)
         self.assertTrue(product.goals.filter(pk=self.goal.pk).exists())
+        self.assertIn("근력-프로그램", product.slug)
+        self.assertEqual(
+            self.client.get(reverse("products:detail", args=[product.slug])).status_code,
+            200,
+        )
 
     def test_detail_content_is_locked_until_product_is_purchased(self):
         product = Product.objects.create(

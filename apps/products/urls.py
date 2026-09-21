@@ -13,5 +13,9 @@ urlpatterns = [
     path("sell/new/", views.product_create, name="create"),
     path("sell/<int:pk>/edit/", views.product_update, name="update"),
     path("sell/<int:pk>/suspend/", views.product_suspend, name="suspend"),
-    path("<slug:slug>/", views.product_detail, name="detail"),
+    # Product slugs are generated with allow_unicode=True, so Korean titles can
+    # produce Korean characters in the slug. Django's <slug:...> converter only
+    # accepts ASCII letters, numbers, hyphens, and underscores; <str:...> keeps
+    # the same single-path-segment behavior while allowing those Unicode slugs.
+    path("<str:slug>/", views.product_detail, name="detail"),
 ]
