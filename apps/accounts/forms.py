@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
@@ -84,6 +86,21 @@ class SignUpForm(UserCreationForm):
         if User.objects.filter(nickname__iexact=nickname).exists():
             raise forms.ValidationError("이미 사용 중인 닉네임입니다.")
         return nickname
+
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1", "")
+        errors = []
+        if len(password) < 10:
+            errors.append("비밀번호는 10자 이상이어야 합니다.")
+        if not re.search(r"[A-Z]", password):
+            errors.append("비밀번호에 영문 대문자를 1개 이상 포함해 주세요.")
+        if not re.search(r"[a-z]", password):
+            errors.append("비밀번호에 영문 소문자를 1개 이상 포함해 주세요.")
+        if not re.search(r"[^A-Za-z0-9\s]", password):
+            errors.append("비밀번호에 특수문자를 1개 이상 포함해 주세요.")
+        if errors:
+            raise forms.ValidationError(errors)
+        return password
 
     def save(self, commit=True):
         user = super().save(commit=False)

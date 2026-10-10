@@ -89,8 +89,8 @@ class SignUpViewTests(TestCase):
                 "email": "trainer-start@example.com",
                 "full_name": "트레이너 신청자",
                 "nickname": "trainer-start",
-                "password1": "safe-test-password-2026",
-                "password2": "safe-test-password-2026",
+                "password1": "Safe-test-password-2026!",
+                "password2": "Safe-test-password-2026!",
                 "next": reverse("trainers:application_form"),
             },
         )
@@ -105,8 +105,8 @@ class SignUpViewTests(TestCase):
                 "email": "safe-next@example.com",
                 "full_name": "안전한 사용자",
                 "nickname": "safe-next",
-                "password1": "safe-test-password-2026",
-                "password2": "safe-test-password-2026",
+                "password1": "Safe-test-password-2026!",
+                "password2": "Safe-test-password-2026!",
                 "next": "https://example.org/steal-session",
             },
         )
@@ -121,8 +121,8 @@ class SignUpViewTests(TestCase):
                 "email": "new@example.com",
                 "full_name": "신규 회원",
                 "nickname": "new-member",
-                "password1": "safe-test-password-2026",
-                "password2": "safe-test-password-2026",
+                "password1": "Safe-test-password-2026!",
+                "password2": "Safe-test-password-2026!",
             },
         )
 
@@ -139,8 +139,8 @@ class SignUpViewTests(TestCase):
                 "email": "unverified@example.com",
                 "full_name": "미인증 회원",
                 "nickname": "unverified-member",
-                "password1": "safe-test-password-2026",
-                "password2": "safe-test-password-2026",
+                "password1": "Safe-test-password-2026!",
+                "password2": "Safe-test-password-2026!",
             },
         )
 
@@ -167,6 +167,30 @@ class SignUpViewTests(TestCase):
 
         self.assertFalse(email_response.json()["available"])
         self.assertFalse(nickname_response.json()["available"])
+
+    def test_signup_requires_uppercase_lowercase_special_and_ten_characters(self):
+        cases = (
+            ("Short1!", "10자 이상"),
+            ("lowercase-only!", "영문 대문자"),
+            ("UPPERCASE-ONLY!", "영문 소문자"),
+            ("NoSpecial123", "특수문자"),
+        )
+        for index, (password, expected_message) in enumerate(cases):
+            email = f"password-rule-{index}@example.com"
+            self.mark_email_verified(email)
+            response = self.client.post(
+                reverse("accounts:signup"),
+                {
+                    "email": email,
+                    "full_name": "비밀번호 검사",
+                    "nickname": f"password-rule-{index}",
+                    "password1": password,
+                    "password2": password,
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, expected_message)
+            self.assertFalse(get_user_model().objects.filter(email=email).exists())
 
     def test_email_code_can_be_sent_and_confirmed(self):
         email = "verify@example.com"

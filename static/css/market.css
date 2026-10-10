@@ -128,5 +128,9 @@ html{scroll-behavior:smooth}
 .field-feedback.success{color:#087b4b}
 .field-feedback.error{color:#c23c3c}
 .field-with-action button:disabled,.email-verification button:disabled{opacity:.6;cursor:not-allowed}
+.password-requirements{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin:9px 0 0;padding:0;list-style:none;color:var(--muted);font-size:12px}
+.password-requirements li:before{content:"○";display:inline-block;width:17px;color:#9aa4b2;font-weight:800}
+.password-requirements li.met{color:var(--success)}
+.password-requirements li.met:before{content:"✓";color:var(--success)}
 .certification-forms{display:grid;gap:16px}.certification-form{margin:0}.certification-add-button{margin-top:16px}.certification-limit{display:inline-block;margin:0 0 0 10px;font-size:12px}
-@media(max-width:480px){.field-with-action,.verification-code-row{grid-template-columns:1fr}.email-verification{grid-template-columns:1fr}.field-with-action .button,.verification-code-row .button,.email-verification>.button{width:100%}}
+@media(max-width:480px){.field-with-action,.verification-code-row{grid-template-columns:1fr}.email-verification{grid-template-columns:1fr}.field-with-action .button,.verification-code-row .button,.email-verification>.button{width:100%}.password-requirements{grid-template-columns:1fr}}

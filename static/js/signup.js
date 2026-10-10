@@ -4,6 +4,8 @@
 
   const emailInput = form.querySelector("#id_email");
   const nicknameInput = form.querySelector("#id_nickname");
+  const passwordInput = form.querySelector("#id_password1");
+  const passwordRules = form.querySelectorAll("[data-password-rule]");
   const sendButton = form.querySelector("[data-send-code]");
   const verificationSection = form.querySelector("[data-email-verification]");
   const confirmButton = form.querySelector("[data-confirm-code]");
@@ -13,6 +15,21 @@
   const csrfToken = form.querySelector("[name=csrfmiddlewaretoken]").value;
   let expiryTimer;
   let resendTimer;
+
+  const passwordChecks = {
+    length: (value) => value.length >= 10,
+    uppercase: (value) => /[A-Z]/.test(value),
+    lowercase: (value) => /[a-z]/.test(value),
+    special: (value) => /[^A-Za-z0-9\s]/.test(value),
+  };
+
+  const updatePasswordRequirements = () => {
+    const value = passwordInput.value;
+    passwordRules.forEach((item) => {
+      const met = passwordChecks[item.dataset.passwordRule](value);
+      item.classList.toggle("met", met);
+    });
+  };
 
   const showStatus = (name, message, ok = false) => {
     const target = form.querySelector(`[data-status="${name}"]`);
@@ -116,6 +133,8 @@
     }
   });
   nicknameInput.addEventListener("input", () => showStatus("nickname", ""));
+  passwordInput.addEventListener("input", updatePasswordRequirements);
+  updatePasswordRequirements();
 
   sendButton.addEventListener("click", async () => {
     const email = emailInput.value.trim();

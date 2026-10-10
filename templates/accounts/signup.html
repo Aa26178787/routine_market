@@ -46,7 +46,12 @@
             <div class="field">
                 <label for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>
                 {{ form.password1 }}
-                {% if form.password1.help_text %}<small>{{ form.password1.help_text|safe }}</small>{% endif %}
+                <ul class="password-requirements" data-password-requirements aria-label="비밀번호 조건">
+                    <li data-password-rule="length">10자 이상</li>
+                    <li data-password-rule="uppercase">영문 대문자 포함</li>
+                    <li data-password-rule="lowercase">영문 소문자 포함</li>
+                    <li data-password-rule="special">특수문자 포함</li>
+                </ul>
                 {{ form.password1.errors }}
             </div>
             <div class="field">
@@ -62,4 +67,4 @@
 </div></section>
 {% endblock %}
 
-{% block extra_js %}<script src="{% static 'js/signup.js' %}?v=20260913-3" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/signup.js' %}?v=20261011-1" defer></script>{% endblock %}
