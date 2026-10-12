@@ -35,3 +35,52 @@ class DesignIntegrationTests(TestCase):
     def test_won_format(self):
         self.assertEqual(won(39000), "₩39,000")
         self.assertEqual(won(0), "₩0")
+
+
+@override_settings(PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
+class SessionIsolationTests(TestCase):
+    def setUp(self):
+        self.member = get_user_model().objects.create_user(
+            email="member-session@example.com",
+            password="Member-session1!",
+            nickname="일반 세션",
+            full_name="일반 회원",
+        )
+        self.admin = get_user_model().objects.create_superuser(
+            email="admin-session@example.com",
+            password="Admin-session1!",
+            nickname="관리자 세션",
+            full_name="관리자",
+        )
+
+    def test_admin_login_does_not_authenticate_storefront(self):
+        response = self.client.post(
+            reverse("admin:login"),
+            {
+                "username": self.admin.email,
+                "password": "Admin-session1!",
+                "next": reverse("admin:index"),
+            },
+        )
+
+        self.assertRedirects(response, reverse("admin:index"))
+        self.assertIn("admin_sessionid", self.client.cookies)
+        storefront = self.client.get(reverse("core:home"))
+        self.assertFalse(storefront.wsgi_request.user.is_authenticated)
+
+    def test_member_and_admin_sessions_can_coexist(self):
+        self.client.force_login(self.member)
+        response = self.client.post(
+            reverse("admin:login"),
+            {
+                "username": self.admin.email,
+                "password": "Admin-session1!",
+                "next": reverse("admin:index"),
+            },
+        )
+
+        self.assertRedirects(response, reverse("admin:index"))
+        storefront = self.client.get(reverse("core:home"))
+        self.assertEqual(storefront.wsgi_request.user.pk, self.member.pk)
+        admin_page = self.client.get(reverse("admin:index"))
+        self.assertEqual(admin_page.wsgi_request.user.pk, self.admin.pk)
